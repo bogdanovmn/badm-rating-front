@@ -1,14 +1,6 @@
 <template>
   <div id="app">
-    <header>
-      <h1>Player Rating</h1>
-    </header>
-    <main>
-      <router-view />
-    </main>
-    <footer>
-      <p>&copy; 2025 Mikhail N Bogdanov</p>
-    </footer>
+    <router-view />
   </div>
 </template>
 

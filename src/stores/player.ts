@@ -4,7 +4,7 @@ import { searchPlayers, getPlayerRatings } from '@/api';
 
 export const usePlayerStore = defineStore('player', () => {
   const suggestions = ref([]);
-  const selectedPlayer = ref(null);
+  const selectedPlayer = ref({});
   const ratings = ref([]);
 
   async function fetchSuggestions(name) {
@@ -35,12 +35,20 @@ export const usePlayerStore = defineStore('player', () => {
       const response = await getPlayerRatings(playerId);
       console.log('Ratings response:', response.data);
       ratings.value = response.data;
-      selectedPlayer.value = suggestions.value.find(p => p.id === playerId);
     } catch (error) {
       console.error('Error fetching ratings:', error);
       ratings.value = [];
     }
   }
 
-  return { suggestions, selectedPlayer, ratings, fetchSuggestions, fetchRatings };
+  function selectPlayer(playerId) {
+    selectedPlayer.value = suggestions.value.find(p => p.id == playerId);
+  }
+
+  function clearSuggestions() {
+    suggestions.value = []; // Очищаем список предложений
+    console.log('Suggestions cleared');
+  }
+
+  return { suggestions, selectedPlayer, ratings, fetchSuggestions, fetchRatings, clearSuggestions, selectPlayer };
 });

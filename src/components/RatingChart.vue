@@ -1,13 +1,12 @@
 <template>
-  <div>
-    <p>Chart will be here</p>
+  <div v-if="ratingData.length">
+    <h1>Игрок {{playerData.name}} {{playerData.year}} {{playerData.region}} {{playerData.rank}}</h1>
     <Chart
       v-if="ratingData.length"
       type="line"
       :data="chartData"
       :options="chartOptions"
     />
-    <p v-else>No ratings data yet</p>
   </div>
 </template>
 
@@ -29,8 +28,9 @@ import {
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
 
 const store = usePlayerStore();
-const { ratings } = store;
 const ratingData = computed(() => store.ratings);
+const playerData = computed(() => store.selectedPlayer.details);
+
 
 // Цвета для разных типов игры
 const colors = {
@@ -104,8 +104,6 @@ const chartOptions = {
     },
   },
 };
-
-console.log('Current ratings in component:', ratings.value);
 </script>
 
 <style scoped>

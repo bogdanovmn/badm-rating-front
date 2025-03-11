@@ -13,6 +13,7 @@ import RatingChart from '@/components/RatingChart.vue';
 
 <style scoped>
 .home {
+  width: 98%;
   padding: 20px;
 }
 </style>
