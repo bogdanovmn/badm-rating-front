@@ -8,12 +8,11 @@ export const usePlayerStore = defineStore('player', () => {
   const ratings = ref([]);
 
   async function fetchSuggestions(name) {
-    console.log('Fetching suggestions for:', name);
-    if (name.length < 2) {
+    if (name.length < 3) {
       suggestions.value = [];
-      // console.log('Name too short, suggestions cleared');
       return;
     }
+    console.log('Fetching suggestions for:', name);
     try {
       const response = await searchPlayers(name);
       // console.log('Response data:', response.data);
@@ -21,7 +20,7 @@ export const usePlayerStore = defineStore('player', () => {
         console.warn('Response.data is not an array:', response.data);
         suggestions.value = [];
       } else {
-        suggestions.value = [...response.data];
+        suggestions.value = response.data;
       }
       // console.log('Suggestions updated:', suggestions.value);
     } catch (error) {
@@ -33,7 +32,7 @@ export const usePlayerStore = defineStore('player', () => {
   async function fetchRatings(playerId) {
     try {
       const response = await getPlayerRatings(playerId);
-      console.log('Ratings response:', response.data);
+      // console.log('Ratings response:', response.data);
       ratings.value = response.data;
     } catch (error) {
       console.error('Error fetching ratings:', error);

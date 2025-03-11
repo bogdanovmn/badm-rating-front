@@ -1,6 +1,5 @@
 <template>
   <div class="home">
-    <h1>Поиск игроков</h1>
     <PlayerSearch />
     <RatingChart />
   </div>

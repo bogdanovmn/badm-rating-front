@@ -20,6 +20,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { debounce } from 'lodash';
 import { usePlayerStore } from '@/stores/player';
 
 const searchQuery = ref('');
@@ -27,11 +28,10 @@ const store = usePlayerStore();
 const { fetchSuggestions, fetchRatings, clearSuggestions, selectPlayer } = store;
 
 const suggestionsList = computed(() => store.suggestions);
+const debouncedFetchSuggestions = debounce(fetchSuggestions, 450);
 
-const onInput = async () => {
-  // console.log('Input changed:', searchQuery.value);
-  await fetchSuggestions(searchQuery.value);
-  // console.log('Suggestions after fetch call:', store.suggestions);
+const onInput = () => {
+  debouncedFetchSuggestions(searchQuery.value);
 };
 
 const onSelectPlayer = (playerId) => {
@@ -98,12 +98,5 @@ const onSelectPlayer = (playerId) => {
 /* Ховер на элементы списка */
 .suggestions li:hover {
   background-color: #f0f8ff; /* Светло-голубой фон */
-}
-
-/* Сообщение об отсутствии результатов */
-.no-results {
-  margin-top: 10px;
-  color: #666;
-  font-size: 1.1rem;
 }
 </style>
