@@ -33,15 +33,15 @@
 import { computed, ref, watch } from 'vue';
 import { usePlayerStore } from '@/stores/player';
 import { Chart } from 'vue-chartjs';
-import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
+import { Chart as ChartJS, Title, Tooltip, Legend, LineController, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
 
-ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
+ChartJS.register(Title, Tooltip, Legend, LineController, LineElement, CategoryScale, LinearScale, PointElement);
 
 const store = usePlayerStore();
 
 // Реактивные данные через computed
 const ratingData = computed(() => store.ratings);
-const playerData = computed(() => store.selectedPlayer.details);
+const playerData = computed(() => store.selectedPlayer?.details);
 
 // Цвета для табов
 const colors = {

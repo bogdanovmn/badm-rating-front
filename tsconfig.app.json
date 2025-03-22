@@ -4,9 +4,12 @@
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-
+    "baseUrl": ".", // Добавляем базовый путь
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["vite/client"], // Типы для Vite
+    "allowSyntheticDefaultImports": true, // Для совместимости с импортами без default
+    "esModuleInterop": true // Для совместимости с CommonJS-модулями
   }
 }

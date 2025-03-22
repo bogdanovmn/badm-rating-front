@@ -1,13 +1,14 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { searchPlayers, getPlayerRatings } from '@/api';
+import type { Player, Rating } from '@/api';
 
 export const usePlayerStore = defineStore('player', () => {
-  const suggestions = ref([]);
-  const selectedPlayer = ref({});
-  const ratings = ref([]);
+  const suggestions = ref<Player[]>([]);
+  const selectedPlayer = ref<Player | null>(null);
+  const ratings = ref<Rating[]>([]);
 
-  async function fetchSuggestions(name) {
+  async function fetchSuggestions(name: string) {
     if (name.length < 3) {
       suggestions.value = [];
       return;
@@ -29,10 +30,9 @@ export const usePlayerStore = defineStore('player', () => {
     }
   }
 
-  async function fetchRatings(playerId) {
+  async function fetchRatings(playerId: string) {
     try {
       const response = await getPlayerRatings(playerId);
-      // console.log('Ratings response:', response.data);
       ratings.value = response.data;
     } catch (error) {
       console.error('Error fetching ratings:', error);
@@ -40,8 +40,8 @@ export const usePlayerStore = defineStore('player', () => {
     }
   }
 
-  function selectPlayer(playerId) {
-    selectedPlayer.value = suggestions.value.find(p => p.id == playerId);
+  function selectPlayer(playerId: string) {
+    selectedPlayer.value = suggestions.value.find((p: Player) => p.id == playerId) ?? null;
   }
 
   function clearSuggestions() {
