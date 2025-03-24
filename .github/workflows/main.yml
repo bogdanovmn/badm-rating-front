@@ -49,4 +49,5 @@ jobs:
           username: ${{ secrets.JINOJ_USER }}
           key: ${{ secrets.JINOJ_KEY }}
           source: "dist/*"  # Что копируем с runner'а
-          target: "${{ steps.prepare.outputs.TARGET_DIR }}"  # Куда копируем на VPS
+          target: ${{ steps.prepare.outputs.TARGET_DIR }}
+          debug: true
