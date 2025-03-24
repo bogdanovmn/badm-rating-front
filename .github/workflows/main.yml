@@ -23,6 +23,11 @@ jobs:
           npm run build  # Предполагается, что это создает папку dist
         working-directory: ./
 
+      - name: Set variables
+        id: vars
+        run: |
+          echo "TARGET_DIR=/home/www/brating" >> $GITHUB_OUTPUT
+
       - name: Prepare VPS
         id: prepare
         uses: appleboy/ssh-action@master
@@ -32,17 +37,12 @@ jobs:
           username: ${{ secrets.JINOJ_USER }}
           key: ${{ secrets.JINOJ_KEY }}
           script: |
-            TARGET_DIR=/home/www/brating
-            echo "TARGET_DIR=$TARGET_DIR" >> $GITHUB_OUTPUT
-            mkdir -p $TARGET_DIR
+            mkdir -p ${{ steps.vars.outputs.TARGET_DIR }}
             TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
             BACKUP_DIR=/home/www-backup/brating_$TIMESTAMP
             mkdir -p $BACKUP_DIR
-            cp -R $TARGET_DIR/* $BACKUP_DIR
-            rm -rf $TARGET_DIR/*
-
-      - name: Debug vars
-        run: echo "Target:${{ steps.prepare.outputs.TARGET_DIR }}"
+            cp -R ${{ steps.vars.outputs.TARGET_DIR }}/* $BACKUP_DIR
+            rm -rf ${{ steps.vars.outputs.TARGET_DIR }}/*
 
       - name: Copy files to VPS
         uses: appleboy/scp-action@master
@@ -52,6 +52,5 @@ jobs:
           username: ${{ secrets.JINOJ_USER }}
           key: ${{ secrets.JINOJ_KEY }}
           source: "dist/*"
-          #target: ${{ steps.prepare.outputs.TARGET_DIR }}
-          target: /home/www/brating
+          target: ${{ steps.vars.outputs.TARGET_DIR }}
           strip_components: 1
