@@ -21,6 +21,7 @@ jobs:
         run: |
           npm ci         # Используем ci для чистой установки зависимостей
           npm run build  # Предполагается, что это создает папку dist
+          ls -la
         working-directory: ./
 
       # Деплой на VPS
@@ -37,4 +38,4 @@ jobs:
 
             # Копирование нового билда
             mkdir -p /home/www/brating
-            cp -r dist/* /home/www/brating
+            cp -r ~/github/workspace/dist/* /home/www/brating
