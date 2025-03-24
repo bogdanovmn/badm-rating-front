@@ -1,0 +1,40 @@
+name: Deploy Frontend
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Установка зависимостей
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Сборка Vue 3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Build Frontend
+        run: |
+          npm ci         # Используем ci для чистой установки зависимостей
+          npm run build  # Предполагается, что это создает папку dist
+        working-directory: ./
+
+      # Деплой на VPS
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.JINOJ_HOST }}
+          port: ${{ secrets.JINOJ_PORT }}
+          username: ${{ secrets.JINOJ_USER }}
+          key: ${{ secrets.JINOJ_KEY }}
+          script: |
+            # Очистка старого билда
+            rm -rf /home/www/brating/*
+
+            # Копирование нового билда
+            mkdir -p /home/www/brating
+            cp -r dist/* /home/www/brating
