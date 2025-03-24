@@ -48,6 +48,7 @@ jobs:
           port: ${{ secrets.JINOJ_PORT }}
           username: ${{ secrets.JINOJ_USER }}
           key: ${{ secrets.JINOJ_KEY }}
-          source: "dist/*"  # Что копируем с runner'а
-          target: ${{ steps.prepare.outputs.TARGET_DIR }}
+          source: "dist/*"
+          #target: ${{ steps.prepare.outputs.TARGET_DIR }}
+          target: /home/www/brating
           debug: true
