@@ -2,25 +2,46 @@
   <div class="chart-container">
     <!-- Данные игрока -->
     <h1 v-if="playerData">
-      {{ playerData.name }} <span class="player-details">({{ playerData.year }}, {{ playerData.region }}, {{ playerData.rank }})</span>
+      {{ playerData.name }}
+      <span class="player-badges">
+        <span class="badge">{{ playerData.year }}</span>
+        <span class="badge">{{ playerData.region }}</span>
+        <span v-if="playerData.rank !== 'NO_RANK'" class="badge">{{ playerData.rank }}</span>
+      </span>
     </h1>
 
-    <div class="tabs">
-      <button
-        v-for="type in playTypes"
-        :key="type"
-        :class="{ 'tab-button': true, active: activePlayType === type }"
-        :style="{ backgroundColor: activePlayType === type ? colors[type] : '#f5f5f5' }"
-        @click="setActivePlayType(type)"
+    <!-- Группы по source с кнопками playType -->
+    <div class="source-groups">
+      <fieldset
+        v-for="source in sources"
+        :key="source"
+        class="source-group"
+        :style="{
+          backgroundColor: sourceColors[source]?.background || '#FAFAFA',
+          borderColor: sourceColors[source]?.border || '#E5E5E5'
+        }"
       >
-        {{ type }} ({{ getLastRating(type) }})
-      </button>
+        <legend :style="{ color: sourceColors[source]?.text || '#A0A0A0' }">
+          {{ mapSourceName(source) }}
+        </legend>
+        <div class="playtype-tabs">
+          <button
+            v-for="type in getPlayTypesForSource(source)"
+            :key="type"
+            :class="{ 'tab-button': true, active: activeSource === source && activePlayType === type }"
+            :style="{ backgroundColor: activeSource === source && activePlayType === type ? colors[type] : '#f5f5f5' }"
+            @click="setActive(source, type)"
+          >
+            {{ type }} ({{ getLastRating(source, type) }})
+          </button>
+        </div>
+      </fieldset>
     </div>
 
-    <!-- График для активного playType -->
+    <!-- График для активного source и playType -->
     <div class="chart-wrapper">
       <Chart
-        v-if="ratingsByPlayType[activePlayType]?.length"
+        v-if="ratingsBySourceAndPlayType[activeSource]?.[activePlayType]?.length"
         type="line"
         :data="chartData"
         :options="chartOptions"
@@ -43,7 +64,7 @@ const store = usePlayerStore();
 const ratingData = computed(() => store.ratings);
 const playerData = computed(() => store.selectedPlayer?.details);
 
-// Цвета для табов
+// Цвета для playType
 const colors = {
   WD: '#42A5F5',
   WS: '#FF6384',
@@ -52,37 +73,69 @@ const colors = {
   XD: '#4BC0C0',
 };
 
-// Группировка рейтингов по playType
-const ratingsByPlayType = computed(() => {
+// Цвета для source
+const sourceColors = {
+  RNBF: {
+    background: '#F0F6FF', // Светло-голубой
+    border: '#D0E0FF',
+    text: '#6B7280', // Серый для читаемости
+  },
+  RNBFJunior: {
+    background: '#F0FFF4', // Светло-зеленый
+    border: '#C4FFD4',
+    text: '#6B7280',
+  },
+};
+
+// Маппинг имен source
+const sourceNameMap = {
+  RNBF: 'НФБР',
+  RNBFJunior: 'НФБР Юниорский',
+};
+
+const mapSourceName = (source) => sourceNameMap[source] || source;
+
+// Группировка рейтингов по source и playType
+const ratingsBySourceAndPlayType = computed(() => {
   return ratingData.value.reduce((acc, rating) => {
-    if (!acc[rating.playType]) {
-      acc[rating.playType] = [];
+    if (!acc[rating.source]) {
+      acc[rating.source] = {};
     }
-    acc[rating.playType].push(rating);
+    if (!acc[rating.source][rating.playType]) {
+      acc[rating.source][rating.playType] = [];
+    }
+    acc[rating.source][rating.playType].push(rating);
     return acc;
   }, {});
 });
 
-// Уникальные playType
-const playTypes = computed(() => Object.keys(ratingsByPlayType.value));
+// Уникальные source
+const sources = computed(() => Object.keys(ratingsBySourceAndPlayType.value));
 
-// Активный playType
+// Получение playType для конкретного source
+const getPlayTypesForSource = (source) => {
+  return Object.keys(ratingsBySourceAndPlayType.value[source] || {});
+};
+
+// Активный source и playType
+const activeSource = ref('');
 const activePlayType = ref('');
 
-// Установка активного playType
-const setActivePlayType = (type) => {
+// Установка активного source и playType
+const setActive = (source, type) => {
+  activeSource.value = source;
   activePlayType.value = type;
 };
 
 // Получение последнего значения рейтинга для таба
-const getLastRating = (playType) => {
-  const ratings = ratingsByPlayType.value[playType] || [];
+const getLastRating = (source, playType) => {
+  const ratings = ratingsBySourceAndPlayType.value[source]?.[playType] || [];
   return ratings.length ? ratings[ratings.length - 1].value : 'N/A';
 };
 
-// Данные для графика текущего playType
+// Данные для графика текущего source и playType
 const chartData = computed(() => {
-  const currentRatings = ratingsByPlayType.value[activePlayType.value] || [];
+  const currentRatings = ratingsBySourceAndPlayType.value[activeSource.value]?.[activePlayType.value] || [];
 
   return {
     labels: currentRatings.map(r => r.date),
@@ -90,7 +143,7 @@ const chartData = computed(() => {
       {
         label: `Рейтинг (${activePlayType.value})`,
         data: currentRatings.map(r => r.value),
-        borderColor: '#42A5F5', // Единый цвет для всех линий
+        borderColor: colors[activePlayType.value] || '#42A5F5', // Цвет линии соответствует playType
         fill: false,
         tension: 0.4,
       },
@@ -108,11 +161,13 @@ const chartOptions = {
   plugins: { legend: { display: false } },
 };
 
-// Автоматический выбор активного таба при смене игрока
+// Автоматический выбор активного source и playType при смене данных
 watch(ratingData, (newRatings) => {
   if (newRatings && newRatings.length) {
-    const availableTypes = Object.keys(ratingsByPlayType.value);
-    activePlayType.value = availableTypes[0] || 'WD'; // Первый доступный тип
+    const availableSources = Object.keys(ratingsBySourceAndPlayType.value);
+    activeSource.value = availableSources[0] || '';
+    const availableTypes = getPlayTypesForSource(activeSource.value);
+    activePlayType.value = availableTypes[0] || '';
   }
 }, { immediate: true });
 </script>
@@ -128,28 +183,64 @@ h1 {
   text-align: center;
   margin-bottom: 20px;
   font-size: 1.8rem;
-}
-
-.player-details {
-  color: rgb(141, 163, 182);
-}
-
-.tabs {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.player-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  background-color: #F0F4F8; /* Мягкий серо-голубой фон */
+  color: #151e27; /* Темный текст, как у Ollama */
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.source-groups {
+  display: flex;
+  justify-content: center; /* Центрирование групп */
+  gap: 15px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.source-group {
+  border-radius: 8px;
+  padding: 10px;
+  min-width: 160px;
+  box-sizing: border-box;
+}
+
+.source-group legend {
+  font-size: 0.9rem; /* Меньше шрифт */
+  font-weight: 400; /* Не жирный */
+  padding: 0 8px;
+  margin: 0;
+}
+
+.playtype-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .tab-button {
-  padding: 10px 20px;
-  font-size: 1.1rem;
+  padding: 6px 12px;
+  font-size: 0.9rem;
   border: 1px solid #ddd;
   border-radius: 5px;
   color: #333;
   cursor: pointer;
-  /* transition: color 0.3s, border-color 0.3s; */
-  transition: background-color 0.7s, color 0.6s, border-color 0.5s;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 
 .tab-button:hover {
@@ -163,5 +254,32 @@ h1 {
 
 .chart-wrapper {
   height: 400px;
+}
+
+@media (max-width: 768px) {
+  .source-groups {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .source-group {
+    width: 100%;
+    padding: 8px;
+  }
+
+  .source-group legend {
+    font-size: 0.85rem;
+  }
+
+  .tab-button {
+    padding: 5px 10px;
+    font-size: 0.85rem;
+  }
+
+  h1 {
+    flex-direction: column;
+    gap: 5px;
+  }
 }
 </style>
