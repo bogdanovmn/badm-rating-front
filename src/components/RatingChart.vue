@@ -104,7 +104,12 @@ const ratingsBySourceAndPlayType = computed(() => {
     if (!acc[rating.source][rating.playType]) {
       acc[rating.source][rating.playType] = [];
     }
-    acc[rating.source][rating.playType].push(rating);
+    // Преобразуем объект data в массив объектов для удобства
+    const ratingEntries = Object.entries(rating.data).map(([date, value]) => ({
+      date,
+      value,
+    }));
+    acc[rating.source][rating.playType] = ratingEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
     return acc;
   }, {});
 });
@@ -138,7 +143,8 @@ const chartData = computed(() => {
   const currentRatings = ratingsBySourceAndPlayType.value[activeSource.value]?.[activePlayType.value] || [];
 
   return {
-    labels: currentRatings.map(r => r.date),
+    //labels: currentRatings.map(r => r.date),
+    labels: currentRatings.map(r => new Date(r.date).toLocaleDateString('ru-RU')),
     datasets: [
       {
         label: `Рейтинг (${activePlayType.value})`,
@@ -174,9 +180,9 @@ watch(ratingData, (newRatings) => {
 
 <style scoped>
 .chart-container {
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 20px;
+  width: 100%; /* Полная ширина родителя */
+  margin: 0;
+  padding: 20px 0; /* Оставляем только вертикальный padding */
 }
 
 h1 {

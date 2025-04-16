@@ -21,19 +21,30 @@ import { RouterLink, RouterView } from 'vue-router';
 </script>
 
 <style scoped>
-html, body {
+/* Нормализация стилей */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow-x: hidden; /* Предотвращаем горизонтальный скролл */
 }
 
 #app {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #151e27; /* Темный текст, как у Ollama */
-  background-color: #FFFFFF; /* Белый фон, как у Ollama */
-  min-height: 100vh; /* Полная высота viewport */
+  color: #151e27;
+  background-color: #ffffff;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -45,39 +56,40 @@ html, body {
 .navbar a {
   margin-right: 20px;
   text-decoration: none;
-  color: #0066CC; /* Цвет ссылок, как у Ollama */
+  color: #0066cc;
   font-weight: 600;
   transition: color 0.3s ease;
 }
 
 .navbar a:hover {
-  color: #004C99; /* Затемнение при наведении */
+  color: #004c99;
 }
 
 .content {
-  flex: 1 0 auto; /* Контент растягивается, толкает футер вниз */
-  max-width: 1280px; /* Центрирование контента */
+  flex: 1 0 auto; /* Растягивает контент, толкает футер вниз */
+  max-width: 1280px;
   width: 100%;
   margin: 0 auto;
   padding: 20px;
-  box-sizing: border-box;
 }
 
 .footer {
   flex-shrink: 0; /* Футер не сжимается */
-  padding: 20px;
-  background-color: #F5F5F5; /* Светлый фон футера */
-  border-top: 1px solid #E5E5E5;
+  padding: 10px 0;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e5e5e5;
   width: 100%;
 }
 
 .footer-content {
+  max-width: 1280px; /* Соответствует ширине контента */
+  width: 100%;
   margin: 0 auto;
   padding: 0 15px;
   display: flex;
-  justify-content: space-between; /* Копирайт слева, контакты справа */
+  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap; /* Адаптивность для узких экранов */
+  flex-wrap: wrap;
 }
 
 .copyright {
@@ -88,17 +100,17 @@ html, body {
 .contact {
   margin: 5px 0;
   font-size: 14px;
-  text-align: right; /* Для выравнивания текста внутри блока */
+  text-align: right;
 }
 
 .footer a {
-  color: #0066CC;
+  color: #0066cc;
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 .footer a:hover {
-  color: #004C99;
+  color: #004c99;
 }
 
 @media (max-width: 768px) {

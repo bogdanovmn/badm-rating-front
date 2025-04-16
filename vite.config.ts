@@ -9,7 +9,7 @@ export default defineConfig({
   base: '/brating/',
   plugins: [
     vue(),
-    vueDevTools(),
+    //vueDevTools(),
   ],
   resolve: {
     alias: {

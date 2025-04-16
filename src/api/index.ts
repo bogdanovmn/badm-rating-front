@@ -11,9 +11,11 @@ export interface Player {
 }
 
 export interface Rating {
+  source: string;
   playType: string;
-  date: string;
-  value: number;
+  data: {
+    [date: string]: number;
+  };
 }
 
 const apiUrl = import.meta.env.VITE_API_URL;
