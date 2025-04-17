@@ -2,12 +2,13 @@ import axios from 'axios';
 
 export interface Player {
   id: string;
+  importId: number;
   details: {
-      name: string;
-      year: number;
-      region: string;
-      rank: string;
-  }
+    name: string;
+    year: number;
+    region: string;
+    rank: string;
+  };
 }
 
 export interface Rating {
@@ -16,6 +17,19 @@ export interface Rating {
   data: {
     [date: string]: number;
   };
+}
+
+export interface TopPlayerData {
+  player: Player;
+  position: number;
+  rating: number;
+  updatedAt: string;
+}
+
+export interface TopPlayerGroup {
+  type: string;
+  source: string;
+  data: TopPlayerData[];
 }
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -30,3 +44,6 @@ export const searchPlayers = (term: string) =>
 
 export const getPlayerRatings = (playerId: string) =>
   api.get(`/players/${playerId}`);
+
+export const getTopPlayers = () =>
+  api.get('/players/statistic/top');

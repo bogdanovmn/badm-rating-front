@@ -143,7 +143,6 @@ const chartData = computed(() => {
   const currentRatings = ratingsBySourceAndPlayType.value[activeSource.value]?.[activePlayType.value] || [];
 
   return {
-    //labels: currentRatings.map(r => r.date),
     labels: currentRatings.map(r => new Date(r.date).toLocaleDateString('ru-RU')),
     datasets: [
       {

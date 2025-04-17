@@ -2,6 +2,7 @@
   <div id="app">
     <nav class="navbar">
       <RouterLink to="/">Рейтинг</RouterLink>
+      <RouterLink to="/top">ТОП игроков</RouterLink>
       <RouterLink to="/about">О проекте</RouterLink>
     </nav>
     <div class="content">
