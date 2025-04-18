@@ -1,56 +1,49 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { getTopPlayers } from '@/api';
-import type { TopPlayerGroup, TopPlayerData } from '@/api';
+import type { TopPlayerGroup } from '@/api';
 
 export const useTopPlayersStore = defineStore('topPlayers', () => {
   const groups = ref<TopPlayerGroup[]>([]);
-  const selectedGroup = ref<{ key: string; source: string; type: string } | null>(null);
+  const selectedGroup = ref<{ source: string; type: string } | null>(null);
   const isLoading = ref(false);
 
-  async function fetchTopPlayers() {
+  // Данные для выбранной группы
+  const selectedGroupData = computed(() => {
+    if (!selectedGroup.value) return [];
+    const group = groups.value.find(
+      (g) => g.source === selectedGroup.value.source && g.type === selectedGroup.value.type
+    );
+    return group ? group.data : [];
+  });
+
+  // Загрузка данных с кэшированием
+  const fetchTopPlayers = async () => {
+    if (groups.value.length > 0) {
+      return;
+    }
+    isLoading.value = true;
     try {
-      isLoading.value = true;
       const response = await getTopPlayers();
-      if (!Array.isArray(response.data)) {
-        console.warn('Response.data is not an array:', response.data);
-        groups.value = [];
-      } else {
-        groups.value = response.data;
-        // Выбираем первую группу по умолчанию
-        if (groups.value.length > 0) {
-          selectedGroup.value = {
-            key: `${groups.value[0].source}-${groups.value[0].type}`,
-            source: groups.value[0].source,
-            type: groups.value[0].type,
-          };
-        }
+      groups.value = response.data; // API возвращает TopPlayerGroup[]
+
+      // Автоматически выбираем первую группу, если selectedGroup не установлено
+      if (groups.value.length > 0 && !selectedGroup.value) {
+        const firstGroup = groups.value[0];
+        selectedGroup.value = { source: firstGroup.source, type: firstGroup.type };
       }
     } catch (error) {
-      console.error('Error fetching top players:', error);
+      console.error('Failed to fetch top players:', error);
       groups.value = [];
     } finally {
       isLoading.value = false;
     }
-  }
+  };
 
-  function selectGroup(source: string, type: string) {
-    selectedGroup.value = { key: `${source}-${type}`, source, type };
-  }
-
-  function clearGroups() {
-    groups.value = [];
-    selectedGroup.value = null;
-  }
-
-  // Вычисляем данные для выбранной группы
-  const selectedGroupData = computed(() => {
-    if (!selectedGroup.value) return [];
-    const group = groups.value.find(
-      (g) => g.source === selectedGroup.value!.source && g.type === selectedGroup.value!.type
-    );
-    return group ? group.data : [];
-  });
+  // Выбор группы
+  const selectGroup = (source: string, type: string) => {
+    selectedGroup.value = { source, type };
+  };
 
   return {
     groups,
@@ -59,6 +52,5 @@ export const useTopPlayersStore = defineStore('topPlayers', () => {
     isLoading,
     fetchTopPlayers,
     selectGroup,
-    clearGroups,
   };
 });

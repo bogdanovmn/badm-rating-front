@@ -39,7 +39,7 @@
       <div v-for="item in selectedGroupData" :key="item.player.id" class="player-row">
         <div class="player-info">
           <span class="position-badge">{{ item.position }}</span>
-          <span class="player-name">{{ item.player.details.name }}</span>
+          <span class="player-name" @click="goToPlayerRatings(item.player)">{{ item.player.details.name }}</span>
           <span class="rating">{{ item.rating }}</span>
         </div>
         <div class="player-badges">
@@ -58,13 +58,17 @@
 
 <script lang="ts">
 import { defineComponent, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useTopPlayersStore } from '@/stores/top';
-import type { TopPlayerGroup } from '@/api';
+import { usePlayerStore } from '@/stores/player';
+import type { TopPlayerGroup, Player } from '@/api';
 
 export default defineComponent({
   name: 'TopPlayers',
   setup() {
     const store = useTopPlayersStore();
+    const storePlayer = usePlayerStore();
+    const router = useRouter();
 
     // Получаем данные из store
     const groups = computed(() => store.groups);
@@ -112,6 +116,26 @@ export default defineComponent({
       return new Date(date).toLocaleDateString('ru-RU');
     };
 
+    // Переход на домашнюю страницу с графиком игрока
+    const goToPlayerRatings = async (player: Player) => {
+      try {
+        console.log('Selected player:', player); // Отладка: проверяем данные игрока
+
+        // Установка source и type
+        if (selectedGroup.value?.source && selectedGroup.value?.type) {
+          storePlayer.selectSource(selectedGroup.value.source);
+          storePlayer.selectType(selectedGroup.value.type);
+        }
+
+        storePlayer.selectPlayer(player); // Устанавливаем игрока с полными данными
+        await storePlayer.fetchRatings(player.id); // Загружаем рейтинги
+        router.push('/'); // Переходим на домашнюю страницу
+      } catch (error) {
+        console.error('Error fetching player ratings:', error);
+        router.push('/'); // Переходим, даже если ошибка
+      }
+    };
+
     // Загрузка данных при монтировании
     onMounted(() => {
       store.fetchTopPlayers();
@@ -128,6 +152,7 @@ export default defineComponent({
       sourceColors,
       mapSourceName,
       formatDate,
+      goToPlayerRatings,
     };
   },
 });
@@ -193,8 +218,8 @@ h1 {
 }
 
 .tab-button.active {
-  color: #333; /* Темный текст для читаемости */
-  font-weight: 700; /* Жирный шрифт */
+  color: #333;
+  font-weight: 700;
   border-color: transparent;
   background-color: #FFE4B5;
 }
@@ -237,6 +262,11 @@ h1 {
   font-size: 1.2rem;
   font-weight: 500;
   color: #151e27;
+  cursor: pointer;
+}
+
+.player-name:hover {
+  text-decoration: underline;
 }
 
 .rating {
@@ -258,7 +288,7 @@ h1 {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  justify-content: flex-start; /* Выравнивание года, региона, ранга влево */
+  justify-content: flex-start;
 }
 
 .badge {
@@ -271,7 +301,13 @@ h1 {
 }
 
 .badge-date {
-  margin-left: auto; /* Выравнивание даты вправо */
+  background-color: #F8FAFC;
+  color: #CBD5E1; /* Светлый шрифт */
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .spinner-container {

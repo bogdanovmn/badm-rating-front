@@ -16,6 +16,7 @@
         v-for="source in sources"
         :key="source"
         class="source-group"
+        :data-source="source"
         :style="{
           backgroundColor: sourceColors[source]?.background || '#FAFAFA',
           borderColor: sourceColors[source]?.border || '#E5E5E5'
@@ -29,7 +30,6 @@
             v-for="type in getPlayTypesForSource(source)"
             :key="type"
             :class="{ 'tab-button': true, active: activeSource === source && activePlayType === type }"
-            :style="{ backgroundColor: activeSource === source && activePlayType === type ? colors[type] : '#f5f5f5' }"
             @click="setActive(source, type)"
           >
             {{ type }} ({{ getLastRating(source, type) }})
@@ -62,7 +62,12 @@ const store = usePlayerStore();
 
 // Реактивные данные через computed
 const ratingData = computed(() => store.ratings);
-const playerData = computed(() => store.selectedPlayer?.details);
+const playerData = computed(() => {
+  console.log('playerData:', store.selectedPlayer); // Отладка: проверяем selectedPlayer
+  return store.selectedPlayer?.details;
+});
+const selectedSource = computed(() => store.selectedSource);
+const selectedType = computed(() => store.selectedType);
 
 // Цвета для playType
 const colors = {
@@ -77,12 +82,12 @@ const colors = {
 const sourceColors = {
   RNBF: {
     background: '#F0F6FF', // Светло-голубой
-    border: '#D0E0FF',
+    border: '#D0E0FF', // Голубая граница
     text: '#6B7280', // Серый для читаемости
   },
   RNBFJunior: {
-    background: '#F0FFF4', // Светло-зеленый
-    border: '#C4FFD4',
+    background: '#FFF7ED', // Светло-оранжевый
+    border: '#FFE4CC', // Мягкий оранжевый
     text: '#6B7280',
   },
 };
@@ -104,7 +109,6 @@ const ratingsBySourceAndPlayType = computed(() => {
     if (!acc[rating.source][rating.playType]) {
       acc[rating.source][rating.playType] = [];
     }
-    // Преобразуем объект data в массив объектов для удобства
     const ratingEntries = Object.entries(rating.data).map(([date, value]) => ({
       date,
       value,
@@ -143,12 +147,12 @@ const chartData = computed(() => {
   const currentRatings = ratingsBySourceAndPlayType.value[activeSource.value]?.[activePlayType.value] || [];
 
   return {
-    labels: currentRatings.map(r => new Date(r.date).toLocaleDateString('ru-RU')),
+    labels: currentRatings.map((r) => new Date(r.date).toLocaleDateString('ru-RU')),
     datasets: [
       {
         label: `Рейтинг (${activePlayType.value})`,
-        data: currentRatings.map(r => r.value),
-        borderColor: colors[activePlayType.value] || '#42A5F5', // Цвет линии соответствует playType
+        data: currentRatings.map((r) => r.value),
+        borderColor: colors[activePlayType.value] || '#42A5F5',
         fill: false,
         tension: 0.4,
       },
@@ -166,22 +170,39 @@ const chartOptions = {
   plugins: { legend: { display: false } },
 };
 
-// Автоматический выбор активного source и playType при смене данных
-watch(ratingData, (newRatings) => {
-  if (newRatings && newRatings.length) {
-    const availableSources = Object.keys(ratingsBySourceAndPlayType.value);
-    activeSource.value = availableSources[0] || '';
-    const availableTypes = getPlayTypesForSource(activeSource.value);
-    activePlayType.value = availableTypes[0] || '';
-  }
-}, { immediate: true });
+// Автоматический выбор активного source и playType
+watch(
+  [ratingData, selectedSource, selectedType],
+  ([newRatings, newSource, newType]) => {
+    if (newRatings && newRatings.length) {
+      const availableSources = Object.keys(ratingsBySourceAndPlayType.value);
+      if (
+        newSource &&
+        newType &&
+        availableSources.includes(newSource) &&
+        getPlayTypesForSource(newSource).includes(newType)
+      ) {
+        activeSource.value = newSource;
+        activePlayType.value = newType;
+      } else {
+        activeSource.value = availableSources[0] || '';
+        const availableTypes = getPlayTypesForSource(activeSource.value);
+        activePlayType.value = availableTypes[0] || '';
+      }
+    } else {
+      activeSource.value = '';
+      activePlayType.value = '';
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
 .chart-container {
-  width: 100%; /* Полная ширина родителя */
+  width: 100%;
   margin: 0;
-  padding: 20px 0; /* Оставляем только вертикальный padding */
+  padding: 20px 0;
 }
 
 h1 {
@@ -202,8 +223,8 @@ h1 {
 }
 
 .badge {
-  background-color: #F0F4F8; /* Мягкий серо-голубой фон */
-  color: #151e27; /* Темный текст, как у Ollama */
+  background-color: #F0F4F8;
+  color: #151e27;
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 0.85rem;
@@ -212,7 +233,7 @@ h1 {
 
 .source-groups {
   display: flex;
-  justify-content: center; /* Центрирование групп */
+  justify-content: center;
   gap: 15px;
   margin-bottom: 20px;
   flex-wrap: wrap;
@@ -223,22 +244,24 @@ h1 {
   padding: 10px;
   min-width: 160px;
   box-sizing: border-box;
+  border-width: 0.5px;
 }
 
 .source-group legend {
-  font-size: 0.9rem; /* Меньше шрифт */
-  font-weight: 400; /* Не жирный */
+  font-size: 0.9rem;
+  font-weight: 400;
   padding: 0 8px;
   margin: 0;
 }
 
 .playtype-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
 .tab-button {
+  flex: 1;
   padding: 6px 12px;
   font-size: 0.9rem;
   border: 1px solid #ddd;
@@ -246,6 +269,8 @@ h1 {
   color: #333;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  text-align: center;
+  background-color: #F5FAFF; /* Очень светлый голубой для RNBF */
 }
 
 .tab-button:hover {
@@ -253,8 +278,18 @@ h1 {
 }
 
 .tab-button.active {
-  color: white;
+  color: #333;
+  font-weight: 700;
   border-color: transparent;
+  background-color: #BFDBFE; /* Голубой для активной кнопки RNBF */
+}
+
+.source-group[data-source="RNBFJunior"] .tab-button {
+  background-color: #FFF5F0; /* Очень светлый оранжевый для RNBFJunior */
+}
+
+.source-group[data-source="RNBFJunior"] .tab-button.active {
+  background-color: #FDBA74; /* Гармоничный оранжевый для активной кнопки RNBFJunior */
 }
 
 .chart-wrapper {
