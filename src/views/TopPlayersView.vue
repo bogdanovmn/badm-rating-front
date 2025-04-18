@@ -56,105 +56,87 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, computed, onMounted } from 'vue';
+<script setup lang="ts">
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTopPlayersStore } from '@/stores/top';
 import { usePlayerStore } from '@/stores/player';
 import type { TopPlayerGroup, Player } from '@/api';
 
-export default defineComponent({
-  name: 'TopPlayers',
-  setup() {
-    const store = useTopPlayersStore();
-    const storePlayer = usePlayerStore();
-    const router = useRouter();
+const store = useTopPlayersStore();
+const storePlayer = usePlayerStore();
+const router = useRouter();
 
-    // Получаем данные из store
-    const groups = computed(() => store.groups);
-    const selectedGroup = computed(() => store.selectedGroup);
-    const selectedGroupData = computed(() => store.selectedGroupData);
-    const isLoading = computed(() => store.isLoading);
+// Получаем данные из store
+const groups = computed(() => store.groups);
+const selectedGroup = computed(() => store.selectedGroup);
+const selectedGroupData = computed(() => store.selectedGroupData);
+const isLoading = computed(() => store.isLoading);
 
-    // Цвета для source (гармоничные с бейджем и рейтингом)
-    const sourceColors = {
-      RNBF: {
-        background: '#FFF8E7', // Очень светлый кремово-золотистый
-        border: '#F5F5F5', // Мягкий серый, почти незаметный
-        text: '#6B7280', // Серый для читаемости
-      },
-      RNBFJunior: {
-        background: '#FFF7E0', // Еще светлее золотисто-кремовый
-        border: '#F5F5F5', // Мягкий серый
-        text: '#6B7280',
-      },
-    };
+// Тип для ключей source
+type SourceType = 'RNBF' | 'RNBFJunior';
 
-    // Маппинг имен source
-    const sourceNameMap = {
-      RNBF: 'НФБР',
-      RNBFJunior: 'НФБР Юниорский',
-    };
+// Цвета для source
+const sourceColors: Record<SourceType, { background: string; border: string; text: string }> = {
+  RNBF: { background: '#F0F6FF', border: '#D0E0FF', text: '#6B7280' },
+  RNBFJunior: { background: '#FFF7ED', border: '#FFE4CC', text: '#6B7280' },
+};
 
-    const mapSourceName = (source: string) => sourceNameMap[source] || source;
+// Маппинг имен source
+const sourceNameMap: Record<SourceType, string> = {
+  RNBF: 'НФБР',
+  RNBFJunior: 'НФБР Юниорский',
+};
 
-    // Уникальные source
-    const sources = computed(() => [...new Set(groups.value.map((g) => g.source))]);
+// Список playType
+const playTypes = ['MS', 'WS', 'MD', 'WD', 'XD'] as const;
 
-    // Получение type для конкретного source
-    const getTypesForSource = (source: string) => {
-      return groups.value.filter((g) => g.source === source).map((g) => g.type);
-    };
+// Уникальные source
+const sources: SourceType[] = ['RNBF', 'RNBFJunior'];
 
-    // Выбор группы
-    const selectGroup = (source: string, type: string) => {
-      store.selectGroup(source, type);
-    };
+//////
 
-    // Форматирование даты
-    const formatDate = (date: string) => {
-      return new Date(date).toLocaleDateString('ru-RU');
-    };
+const mapSourceName = (source: SourceType) => sourceNameMap[source] || source;
 
-    // Переход на домашнюю страницу с графиком игрока
-    const goToPlayerRatings = async (player: Player) => {
-      try {
-        console.log('Selected player:', player); // Отладка: проверяем данные игрока
 
-        // Установка source и type
-        if (selectedGroup.value?.source && selectedGroup.value?.type) {
-          storePlayer.selectSource(selectedGroup.value.source);
-          storePlayer.selectType(selectedGroup.value.type);
-        }
+// Получение type для конкретного source
+const getTypesForSource = (source: string) => {
+  return groups.value.filter((g) => g.source === source).map((g) => g.type);
+};
 
-        storePlayer.selectPlayer(player); // Устанавливаем игрока с полными данными
-        await storePlayer.fetchRatings(player.id); // Загружаем рейтинги
-        router.push('/'); // Переходим на домашнюю страницу
-      } catch (error) {
-        console.error('Error fetching player ratings:', error);
-        router.push('/'); // Переходим, даже если ошибка
-      }
-    };
+// Выбор группы
+const selectGroup = (source: string, type: string) => {
+  store.selectGroup(source, type);
+};
 
-    // Загрузка данных при монтировании
-    onMounted(() => {
-      store.fetchTopPlayers();
-    });
+// Форматирование даты
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString('ru-RU');
+};
 
-    return {
-      groups,
-      selectedGroup,
-      selectedGroupData,
-      isLoading,
-      sources,
-      getTypesForSource,
-      selectGroup,
-      sourceColors,
-      mapSourceName,
-      formatDate,
-      goToPlayerRatings,
-    };
-  },
+// Переход на домашнюю страницу с графиком игрока
+const goToPlayerRatings = async (player: Player) => {
+  try {
+    console.log('Selected player:', player); // Отладка: проверяем данные игрока
+
+    // Установка source и type
+    if (selectedGroup.value?.source && selectedGroup.value?.type) {
+      storePlayer.selectSource(selectedGroup.value.source);
+      storePlayer.selectType(selectedGroup.value.type);
+    }
+
+    storePlayer.selectPlayer(player); // Устанавливаем игрока с полными данными
+    await storePlayer.fetchRatings(player.id); // Загружаем рейтинги
+    router.push('/'); // Переходим на домашнюю страницу
+  } catch (error) {
+    console.error('Error fetching player ratings:', error);
+    router.push('/'); // Переходим, даже если ошибка
+  }
+};
+
+// Загрузка данных при монтировании
+onMounted(() => {
+  store.fetchTopPlayers();
 });
 </script>
 

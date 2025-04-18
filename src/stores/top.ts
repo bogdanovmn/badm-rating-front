@@ -12,7 +12,7 @@ export const useTopPlayersStore = defineStore('topPlayers', () => {
   const selectedGroupData = computed(() => {
     if (!selectedGroup.value) return [];
     const group = groups.value.find(
-      (g) => g.source === selectedGroup.value.source && g.type === selectedGroup.value.type
+      (g) => g.source === selectedGroup.value?.source && g.type === selectedGroup.value.type
     );
     return group ? group.data : [];
   });
