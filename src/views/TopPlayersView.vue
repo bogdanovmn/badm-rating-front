@@ -8,13 +8,13 @@
         :class="{ 'toggle-button': true, active: topType === 'actual' }"
         @click="selectTopType('actual')"
       >
-        Текущий топ
+        Текущий
       </button>
       <button
         :class="{ 'toggle-button': true, active: topType === 'all-time' }"
         @click="selectTopType('all-time')"
       >
-        Топ за все время
+        За все время
       </button>
     </div>
 
@@ -318,7 +318,7 @@ h1 {
   width: 28px;
   height: 28px;
   background-color: #FFFFFF;
-  border: 2px solid #151e27;
+  border: 1px solid #727070;
   color: #151e27;
   border-radius: 50%;
   font-size: 0.9rem;
@@ -418,7 +418,7 @@ h1 {
   width: 40px;
   height: 40px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #42A5F5;
+  border-top: 4px solid #b88d4c;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
