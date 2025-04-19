@@ -47,3 +47,6 @@ export const getPlayerRatings = (playerId: string) =>
 
 export const getTopPlayers = () =>
   api.get('/players/statistic/top');
+
+export const getTopActualPlayers = () =>
+  api.get('/players/statistic/actual-top');

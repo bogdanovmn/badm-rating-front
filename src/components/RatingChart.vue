@@ -164,8 +164,8 @@ const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   scales: {
-    x: { title: { display: true, text: 'Дата' } },
-    y: { title: { display: true, text: 'Рейтинг' } },
+    x: { title: { display: false, text: 'Дата' } },
+    y: { title: { display: false, text: 'Рейтинг' } },
   },
   plugins: { legend: { display: false } },
 };

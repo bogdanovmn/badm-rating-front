@@ -2,6 +2,22 @@
   <div class="top-players-container">
     <h1 class="text-2xl font-bold mb-3">Топ игроков</h1>
 
+    <!-- Кнопки переключения типа топа -->
+    <div class="top-type-toggle mb-4">
+      <button
+        :class="{ 'toggle-button': true, active: topType === 'actual' }"
+        @click="selectTopType('actual')"
+      >
+        Текущий
+      </button>
+      <button
+        :class="{ 'toggle-button': true, active: topType === 'all-time' }"
+        @click="selectTopType('all-time')"
+      >
+        За все время
+      </button>
+    </div>
+
     <!-- Группы по source с кнопками type -->
     <div class="source-groups">
       <fieldset
@@ -72,6 +88,7 @@ const groups = computed(() => store.groups);
 const selectedGroup = computed(() => store.selectedGroup);
 const selectedGroupData = computed(() => store.selectedGroupData);
 const isLoading = computed(() => store.isLoading);
+const topType = computed(() => store.topType);
 
 // Тип для ключей source
 type SourceType = 'RNBF' | 'RNBFJunior';
@@ -90,18 +107,18 @@ const sourceNameMap: Record<SourceType, string> = {
 
 // Список playType
 const playTypes = ['MS', 'WS', 'MD', 'WD', 'XD'] as const;
-
 // Уникальные source
 const sources: SourceType[] = ['RNBF', 'RNBFJunior'];
-
-//////
-
 const mapSourceName = (source: SourceType) => sourceNameMap[source] || source;
-
 
 // Получение type для конкретного source
 const getTypesForSource = (source: string) => {
   return groups.value.filter((g) => g.source === source).map((g) => g.type);
+};
+
+// Выбор типа топа
+const selectTopType = (type: 'actual' | 'all-time') => {
+  store.selectTopType(type);
 };
 
 // Выбор группы
@@ -136,7 +153,8 @@ const goToPlayerRatings = async (player: Player) => {
 
 // Загрузка данных при монтировании
 onMounted(() => {
-  store.fetchTopPlayers();
+  store.selectTopType('actual'); // Устанавливаем Текущий топ
+  store.selectGroup('RNBF', 'MS'); // Устанавливаем RNBF, MS по умолчанию
 });
 </script>
 
@@ -151,6 +169,34 @@ h1 {
   text-align: center;
   margin-bottom: 12px;
   font-size: 1.8rem;
+}
+
+.top-type-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.toggle-button {
+  padding: 8px 16px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  background-color: #F0F4F8;
+}
+
+.toggle-button:hover {
+  background-color: #E5E7EB;
+}
+
+.toggle-button.active {
+  background-color: #FFE4B5;
+  border-color: transparent;
+  font-weight: 700;
 }
 
 .source-groups {
@@ -314,6 +360,16 @@ h1 {
 }
 
 @media (max-width: 768px) {
+  .top-type-toggle {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toggle-button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+
   .source-groups {
     flex-direction: column;
     gap: 10px;
