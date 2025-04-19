@@ -8,13 +8,13 @@
         :class="{ 'toggle-button': true, active: topType === 'actual' }"
         @click="selectTopType('actual')"
       >
-        Текущий
+        Текущий топ
       </button>
       <button
         :class="{ 'toggle-button': true, active: topType === 'all-time' }"
         @click="selectTopType('all-time')"
       >
-        За все время
+        Топ за все время
       </button>
     </div>
 
@@ -52,19 +52,46 @@
 
     <!-- Список игроков -->
     <div v-else-if="selectedGroupData.length" class="players-list">
-      <div v-for="item in selectedGroupData" :key="item.player.id" class="player-row">
+      <div
+        v-for="item in selectedGroupData"
+        :key="item.player.id"
+        class="player-row"
+        :class="{
+          'row-gold': item.position === 1,
+          'row-silver': item.position === 2,
+          'row-bronze': item.position === 3
+        }"
+      >
         <div class="player-info">
-          <span class="position-badge">{{ item.position }}</span>
+          <span
+            class="position-badge"
+            :class="{
+              'position-gold': item.position === 1,
+              'position-silver': item.position === 2,
+              'position-bronze': item.position === 3
+            }"
+          >
+            {{ item.position }}
+          </span>
           <span class="player-name" @click="goToPlayerRatings(item.player)">{{ item.player.details.name }}</span>
-          <span class="rating">{{ item.rating }}</span>
+          <span
+            class="rating"
+            :class="{
+              'rating-gold': item.position === 1,
+              'rating-silver': item.position === 2,
+              'rating-bronze': item.position === 3
+            }"
+          >
+            {{ item.rating }}
+          </span>
         </div>
         <div class="player-badges">
-          <div class="badges-left">
-            <span class="badge">{{ item.player.details.year }}</span>
-            <span class="badge">{{ item.player.details.region }}</span>
-            <span v-if="item.player.details.rank !== 'NO_RANK'" class="badge">{{ item.player.details.rank }}</span>
-          </div>
-          <span class="badge badge-date">{{ formatDate(item.updatedAt) }}</span>
+          <span class="badge">{{ item.player.details.year }}</span>
+          <span class="badge badge-secondary">{{ item.player.details.region }}</span>
+          <span v-if="item.player.details.rank !== 'NO_RANK'" class="badge badge-secondary">
+            {{ item.player.details.rank }}
+          </span>
+          <span class="badge badge-secondary badge-date">{{ formatDate(item.updatedAt) }}</span>
         </div>
       </div>
     </div>
@@ -264,6 +291,18 @@ h1 {
   border-bottom: 1px solid #eee;
 }
 
+.row-gold {
+  background-color: #FFFEF5;
+}
+
+.row-silver {
+  background-color: #FCFDFF;
+}
+
+.row-bronze {
+  background-color: #FFF9F5;
+}
+
 .player-info {
   display: flex;
   align-items: center;
@@ -278,11 +317,33 @@ h1 {
   justify-content: center;
   width: 28px;
   height: 28px;
-  background-color: #FFE4B5;
-  color: #333;
+  background-color: #FFFFFF;
+  border: 2px solid #151e27;
+  color: #151e27;
   border-radius: 50%;
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.position-gold {
+  background-color: #FFECB3;
+  color: #D4A017;
+  border: none;
+  font-weight: 700;
+}
+
+.position-silver {
+  background-color: #E2E8F0;
+  color: #64748B;
+  border: none;
+  font-weight: 700;
+}
+
+.position-bronze {
+  background-color: #F4C7AB;
+  color: #9C4B1F;
+  border: none;
+  font-weight: 700;
 }
 
 .player-name {
@@ -300,23 +361,32 @@ h1 {
 .rating {
   font-size: 1rem;
   font-weight: 500;
-  color: #DAA520;
+  color: #151e27;
   margin-left: auto;
+}
+
+.rating-gold {
+  color: #D4A017;
+  font-weight: 700;
+}
+
+.rating-silver {
+  color: #64748B;
+  font-weight: 700;
+}
+
+.rating-bronze {
+  color: #9C4B1F;
+  font-weight: 700;
 }
 
 .player-badges {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   flex-wrap: wrap;
   margin-top: 6px;
-}
-
-.badges-left {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  margin-left: 40px; /* Смещение под имя игрока: 28px (position-badge) + 12px (gap) */
 }
 
 .badge {
@@ -328,14 +398,13 @@ h1 {
   font-weight: 500;
 }
 
-.badge-date {
+.badge-secondary {
   background-color: #F8FAFC;
-  color: #CBD5E1; /* Светлый шрифт */
+  color: #CBD5E1;
+}
+
+.badge-date {
   margin-left: auto;
-  padding: 3px 8px;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 500;
 }
 
 .spinner-container {
@@ -406,6 +475,10 @@ h1 {
 
   .rating {
     font-size: 0.9rem;
+  }
+
+  .player-badges {
+    margin-left: 32px; /* 24px (position-badge) + 8px (gap) */
   }
 }
 </style>
