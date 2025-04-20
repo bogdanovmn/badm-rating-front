@@ -32,7 +32,6 @@ export const usePlayerStore = defineStore('player', () => {
     if (query.length < 3) {
       suggestions.value = [];
     } else {
-      console.log('Fetching suggestions for:', query);
       try {
         const response = await searchPlayers(query);
         suggestions.value = response.data; // API возвращает Player[]

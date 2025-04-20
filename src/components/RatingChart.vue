@@ -99,17 +99,20 @@ const selectedSource = computed(() => store.selectedSource);
 const selectedType = computed(() => store.selectedType);
 const isLoadingSimilar = ref(false);
 
-// Цвета для playType
-const colors = {
-  WD: '#42A5F5',
-  WS: '#FF6384',
-  MD: '#36A2EB',
-  MS: '#FFCE56',
-  XD: '#4BC0C0',
-};
+// Интерфейс для цветов source
+interface SourceColor {
+  background: string;
+  border: string;
+  text: string;
+}
+
+// Тип для sourceColors с сигнатурой индекса
+interface SourceColors {
+  [key: string]: SourceColor;
+}
 
 // Цвета для source
-const sourceColors = {
+const sourceColors: SourceColors = {
   RNBF: {
     background: '#F0F6FF',
     border: '#D0E0FF',
@@ -122,13 +125,32 @@ const sourceColors = {
   },
 };
 
+// Тип для sourceNameMap с сигнатурой индекса
+interface SourceNameMap {
+  [key: string]: string;
+}
+
 // Маппинг имен source
-const sourceNameMap = {
+const sourceNameMap: SourceNameMap = {
   RNBF: 'НФБР',
   RNBFJunior: 'НФБР Юниорский',
 };
 
 const mapSourceName = (source: string) => sourceNameMap[source] || source;
+
+// Интерфейс для цветов playType
+interface PlayTypeColors {
+  [key: string]: string;
+}
+
+// Цвета для playType
+const colors: PlayTypeColors = {
+  WD: '#42A5F5',
+  WS: '#FF6384',
+  MD: '#36A2EB',
+  MS: '#FFCE56',
+  XD: '#4BC0C0',
+};
 
 // Группировка рейтингов по source и playType
 const ratingsBySourceAndPlayType = computed(() => {
@@ -205,7 +227,6 @@ const chartOptions = {
 // Загрузка данных игрока и похожих игроков
 const loadPlayerData = async (playerId: string) => {
   try {
-    console.log('Loading player data for playerId:', playerId);
     isLoadingSimilar.value = true;
     await Promise.all([
       store.fetchRatings(playerId),
@@ -234,7 +255,6 @@ watch(
   () => store.selectedPlayer,
   (newPlayer) => {
     if (newPlayer?.id) {
-      console.log('Selected player changed, loading data for:', newPlayer.id);
       loadPlayerData(newPlayer.id);
     }
   },
