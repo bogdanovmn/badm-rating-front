@@ -1,3 +1,4 @@
+```vue
 <template>
   <div class="chart-container">
     <!-- Данные игрока -->
@@ -47,27 +48,56 @@
         :options="chartOptions"
       />
     </div>
+
+    <!-- Список похожих игроков -->
+    <div v-if="similarPlayers.length" class="similar-players">
+      <div class="warning-title">
+        <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F4A261" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v2m0 4h.01M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/></svg>
+        <b>Возможное</b> дублирование профиля
+      </div>
+      <div class="suggestions-list">
+        <div
+          v-for="player in similarPlayers"
+          :key="player.id"
+          class="player-row"
+          @click="onSelectSimilarPlayer(player)"
+        >
+          <span class="player-name">{{ player.details.name }}</span>
+          <div class="player-badges">
+            <span class="badge">{{ player.details.year }}</span>
+            <span class="badge">{{ player.details.region }}</span>
+            <span v-if="player.details.rank !== 'NO_RANK'" class="badge">{{ player.details.rank }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div v-else-if="isLoadingSimilar" class="spinner-container">
+      <div class="spinner"></div>
+    </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { usePlayerStore } from '@/stores/player';
 import { Chart } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, LineController, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
+import type { Player } from '@/api';
 
 ChartJS.register(Title, Tooltip, Legend, LineController, LineElement, CategoryScale, LinearScale, PointElement);
 
 const store = usePlayerStore();
+const router = useRouter();
+const route = useRoute();
 
 // Реактивные данные через computed
 const ratingData = computed(() => store.ratings);
-const playerData = computed(() => {
-  console.log('playerData:', store.selectedPlayer); // Отладка: проверяем selectedPlayer
-  return store.selectedPlayer?.details;
-});
+const playerData = computed(() => store.selectedPlayer?.details);
+const similarPlayers = computed(() => store.similarPlayers);
 const selectedSource = computed(() => store.selectedSource);
 const selectedType = computed(() => store.selectedType);
+const isLoadingSimilar = ref(false);
 
 // Цвета для playType
 const colors = {
@@ -81,13 +111,13 @@ const colors = {
 // Цвета для source
 const sourceColors = {
   RNBF: {
-    background: '#F0F6FF', // Светло-голубой
-    border: '#D0E0FF', // Голубая граница
-    text: '#6B7280', // Серый для читаемости
+    background: '#F0F6FF',
+    border: '#D0E0FF',
+    text: '#6B7280',
   },
   RNBFJunior: {
-    background: '#FFF7ED', // Светло-оранжевый
-    border: '#FFE4CC', // Мягкий оранжевый
+    background: '#FFF7ED',
+    border: '#FFE4CC',
     text: '#6B7280',
   },
 };
@@ -98,7 +128,7 @@ const sourceNameMap = {
   RNBFJunior: 'НФБР Юниорский',
 };
 
-const mapSourceName = (source) => sourceNameMap[source] || source;
+const mapSourceName = (source: string) => sourceNameMap[source] || source;
 
 // Группировка рейтингов по source и playType
 const ratingsBySourceAndPlayType = computed(() => {
@@ -113,16 +143,16 @@ const ratingsBySourceAndPlayType = computed(() => {
       date,
       value,
     }));
-    acc[rating.source][rating.playType] = ratingEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
+    acc[rating.source][rating.playType] = ratingEntries.sort((a, b) => new Date(a.date).valueOf() - new Date(b.date).valueOf());
     return acc;
-  }, {});
+  }, {} as { [source: string]: { [playType: string]: { date: string; value: number }[] } });
 });
 
 // Уникальные source
 const sources = computed(() => Object.keys(ratingsBySourceAndPlayType.value));
 
 // Получение playType для конкретного source
-const getPlayTypesForSource = (source) => {
+const getPlayTypesForSource = (source: string) => {
   return Object.keys(ratingsBySourceAndPlayType.value[source] || {});
 };
 
@@ -131,13 +161,15 @@ const activeSource = ref('');
 const activePlayType = ref('');
 
 // Установка активного source и playType
-const setActive = (source, type) => {
+const setActive = (source: string, type: string) => {
   activeSource.value = source;
   activePlayType.value = type;
+  store.selectSource(source);
+  store.selectType(type);
 };
 
 // Получение последнего значения рейтинга для таба
-const getLastRating = (source, playType) => {
+const getLastRating = (source: string, playType: string) => {
   const ratings = ratingsBySourceAndPlayType.value[source]?.[playType] || [];
   return ratings.length ? ratings[ratings.length - 1].value : 'N/A';
 };
@@ -169,6 +201,45 @@ const chartOptions = {
   },
   plugins: { legend: { display: false } },
 };
+
+// Загрузка данных игрока и похожих игроков
+const loadPlayerData = async (playerId: string) => {
+  try {
+    console.log('Loading player data for playerId:', playerId);
+    isLoadingSimilar.value = true;
+    await Promise.all([
+      store.fetchRatings(playerId),
+      store.fetchSimilarPlayers(playerId),
+    ]);
+  } catch (error) {
+    console.error('Error loading player data:', error);
+  } finally {
+    isLoadingSimilar.value = false;
+  }
+};
+
+// Выбор игрока из списка похожих
+const onSelectSimilarPlayer = async (player: Player) => {
+  try {
+    store.selectPlayer(player);
+    await loadPlayerData(player.id);
+    router.push('/');
+  } catch (error) {
+    console.error('Error selecting similar player:', error);
+  }
+};
+
+// Загружаем данные при монтировании и изменении selectedPlayer
+watch(
+  () => store.selectedPlayer,
+  (newPlayer) => {
+    if (newPlayer?.id) {
+      console.log('Selected player changed, loading data for:', newPlayer.id);
+      loadPlayerData(newPlayer.id);
+    }
+  },
+  { immediate: true }
+);
 
 // Автоматический выбор активного source и playType
 watch(
@@ -270,7 +341,7 @@ h1 {
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s, border-color 0.3s;
   text-align: center;
-  background-color: #F5FAFF; /* Очень светлый голубой для RNBF */
+  background-color: #F5FAFF;
 }
 
 .tab-button:hover {
@@ -281,19 +352,92 @@ h1 {
   color: #333;
   font-weight: 700;
   border-color: transparent;
-  background-color: #BFDBFE; /* Голубой для активной кнопки RNBF */
+  background-color: #BFDBFE;
 }
 
 .source-group[data-source="RNBFJunior"] .tab-button {
-  background-color: #FFF5F0; /* Очень светлый оранжевый для RNBFJunior */
+  background-color: #FFF5F0;
 }
 
 .source-group[data-source="RNBFJunior"] .tab-button.active {
-  background-color: #FDBA74; /* Гармоничный оранжевый для активной кнопки RNBFJunior */
+  background-color: #FDBA74;
 }
 
 .chart-wrapper {
   height: 400px;
+}
+
+.similar-players {
+  margin-top: 40px;
+}
+
+.warning-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: #F4A261; /* Светлый оранжевый для текста */
+  background-color: #FFF4E6; /* Очень светлый оранжевый фон */
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.warning-icon {
+  flex-shrink: 0;
+  stroke: #F4A261; /* Светлый оранжевый для иконки */
+}
+
+.suggestions-list {
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.player-row:hover {
+  background-color: #f9f9f9;
+}
+
+.player-name {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #151e27;
+}
+
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #42A5F5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {
@@ -320,6 +464,29 @@ h1 {
   h1 {
     flex-direction: column;
     gap: 5px;
+  }
+
+  .suggestions-list {
+    max-width: 100%;
+  }
+
+  .player-row {
+    padding: 10px;
+    margin-bottom: 6px;
+  }
+
+  .player-name {
+    font-size: 1.1rem;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+
+  .warning-title {
+    font-size: 1.0rem;
+    padding: 10px;
   }
 }
 </style>

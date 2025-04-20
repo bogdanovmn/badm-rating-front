@@ -42,6 +42,9 @@ const api = axios.create({
 export const searchPlayers = (term: string) =>
   api.get('/players', { params: { term } });
 
+export const similaritiesPlayers = (playerId: string) =>
+  api.get(`/players/${playerId}/similarities`);
+
 export const getPlayerRatings = (playerId: string) =>
   api.get(`/players/${playerId}`);
 
