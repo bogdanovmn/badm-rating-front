@@ -75,6 +75,16 @@
           </span>
           <span class="player-name" @click="goToPlayerRatings(item.player)">{{ item.player.details.name }}</span>
           <span
+            v-if="item.positionChange !== 0"
+            class="change-badge"
+            :class="{
+              'change-positive': item.positionChange > 0,
+              'change-negative': item.positionChange < 0
+            }"
+          >
+            {{ formatPositionChange(item.positionChange) }}
+          </span>
+          <span
             class="rating"
             :class="{
               'rating-gold': item.position === 1,
@@ -83,6 +93,16 @@
             }"
           >
             {{ item.rating }}
+          </span>
+          <span
+            v-if="item.ratingChange !== 0"
+            class="change-badge"
+            :class="{
+              'change-positive': item.ratingChange > 0,
+              'change-negative': item.ratingChange < 0
+            }"
+          >
+            {{ formatRatingChange(item.ratingChange) }}
           </span>
         </div>
         <div class="player-badges">
@@ -156,6 +176,20 @@ const selectGroup = (source: string, type: string) => {
 // Форматирование даты
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('ru-RU');
+};
+
+// Форматирование изменения позиции
+const formatPositionChange = (change: number) => {
+  if (change > 0) return `↑ ${change}`;
+  if (change < 0) return `↓ ${Math.abs(change)}`;
+  return '';
+};
+
+// Форматирование изменения рейтинга
+const formatRatingChange = (change: number) => {
+  if (change > 0) return `↑ ${change}`;
+  if (change < 0) return `↓ ${Math.abs(change)}`;
+  return '';
 };
 
 // Переход на домашнюю страницу с графиком игрока
@@ -308,7 +342,7 @@ h1 {
   align-items: center;
   width: 100%;
   flex-wrap: nowrap;
-  gap: 12px;
+  gap: 8px; /* Увеличено для большего расстояния */
 }
 
 .position-badge {
@@ -318,7 +352,7 @@ h1 {
   width: 28px;
   height: 28px;
   background-color: #FFFFFF;
-  border: 1px solid #727070;
+  border: 1px solid #69747e;
   color: #151e27;
   border-radius: 50%;
   font-size: 0.9rem;
@@ -347,7 +381,6 @@ h1 {
 }
 
 .player-name {
-  flex: 1;
   font-size: 1.2rem;
   font-weight: 500;
   color: #151e27;
@@ -380,13 +413,30 @@ h1 {
   font-weight: 700;
 }
 
+.change-badge {
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 0.625rem;
+  font-weight: 500;
+}
+
+.change-positive {
+  background-color: #f6fff9;
+  color: #7db9a1;
+}
+
+.change-negative {
+  background-color: #fdf7f7;
+  color: #b87878;
+}
+
 .player-badges {
   display: flex;
   align-items: flex-start;
   gap: 6px;
   flex-wrap: wrap;
   margin-top: 6px;
-  margin-left: 40px; /* Смещение под имя игрока: 28px (position-badge) + 12px (gap) */
+  margin-left: 36px; /* 28px (position-badge) + 8px (gap) */
 }
 
 .badge {
@@ -418,7 +468,7 @@ h1 {
   width: 40px;
   height: 40px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #b88d4c;
+  border-top: 4px solid #42A5F5;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -460,7 +510,7 @@ h1 {
   }
 
   .player-info {
-    gap: 8px;
+    gap: 6px; /* Увеличено для мобильных */
   }
 
   .position-badge {
@@ -478,7 +528,7 @@ h1 {
   }
 
   .player-badges {
-    margin-left: 32px; /* 24px (position-badge) + 8px (gap) */
+    margin-left: 30px; /* 24px (position-badge) + 6px (gap) */
   }
 }
 </style>

@@ -23,6 +23,8 @@ export interface TopPlayerData {
   player: Player;
   position: number;
   rating: number;
+  ratingChange: number;
+  positionChange: number;
   updatedAt: string;
 }
 
