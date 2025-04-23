@@ -1,20 +1,14 @@
 <template>
   <div class="top-players-container">
-    <h1 class="text-2xl font-bold mb-3">Топ игроков</h1>
+    <!-- Заголовок с динамической датой -->
+    <h1 class="text-2xl font-bold mb-3">
+      {{ topType === 'actual' ? `Текущий топ на ${formatDate(selectedGroupData[0]?.updatedAt)}` : 'Топ игроков за все время' }}
+    </h1>
 
-    <!-- Кнопки переключения типа топа -->
+    <!-- Одна кнопка для переключения -->
     <div class="top-type-toggle mb-4">
-      <button
-        :class="{ 'toggle-button': true, active: topType === 'actual' }"
-        @click="selectTopType('actual')"
-      >
-        Текущий
-      </button>
-      <button
-        :class="{ 'toggle-button': true, active: topType === 'all-time' }"
-        @click="selectTopType('all-time')"
-      >
-        За все время
+      <button class="toggle-button" @click="selectTopType(topType === 'actual' ? 'all-time' : 'actual')">
+        {{ topType === 'actual' ? 'Показать за все время' : 'Показать текущий топ' }}
       </button>
     </div>
 
@@ -84,26 +78,29 @@
           >
             {{ formatPositionChange(item.positionChange) }}
           </span>
-          <span
-            class="rating"
-            :class="{
-              'rating-gold': item.position === 1,
-              'rating-silver': item.position === 2,
-              'rating-bronze': item.position === 3
-            }"
-          >
-            {{ item.rating }}
-          </span>
-          <span
-            v-if="item.ratingChange !== 0"
-            class="change-badge"
-            :class="{
-              'change-positive': item.ratingChange > 0,
-              'change-negative': item.ratingChange < 0
-            }"
-          >
-            {{ formatRatingChange(item.ratingChange) }}
-          </span>
+          <!-- Контейнер для рейтинга и бейджа изменения рейтинга -->
+          <div class="rating-container">
+            <span
+              v-if="item.ratingChange !== 0"
+              class="change-badge"
+              :class="{
+                'change-positive': item.ratingChange > 0,
+                'change-negative': item.ratingChange < 0
+              }"
+            >
+              {{ formatRatingChange(item.ratingChange) }}
+            </span>
+            <span
+              class="rating"
+              :class="{
+                'rating-gold': item.position === 1,
+                'rating-silver': item.position === 2,
+                'rating-bronze': item.position === 3
+              }"
+            >
+              {{ item.rating }}
+            </span>
+          </div>
         </div>
         <div class="player-badges">
           <span class="badge">{{ item.player.details.year }}</span>
@@ -111,7 +108,8 @@
           <span v-if="item.player.details.rank !== 'NO_RANK'" class="badge badge-secondary">
             {{ item.player.details.rank }}
           </span>
-          <span class="badge badge-secondary badge-date">{{ formatDate(item.updatedAt) }}</span>
+          <!-- Дата показывается только для all-time -->
+          <span v-if="topType === 'all-time'" class="badge badge-secondary badge-date">{{ formatDate(item.updatedAt) }}</span>
         </div>
       </div>
     </div>
@@ -174,7 +172,8 @@ const selectGroup = (source: string, type: string) => {
 };
 
 // Форматирование даты
-const formatDate = (date: string) => {
+const formatDate = (date: string | undefined) => {
+  if (!date) return '';
   return new Date(date).toLocaleDateString('ru-RU');
 };
 
@@ -247,17 +246,11 @@ h1 {
   color: #333;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-  background-color: #F0F4F8;
+  background-color: #FFE4B5; /* Всегда активная */
 }
 
 .toggle-button:hover {
   background-color: #E5E7EB;
-}
-
-.toggle-button.active {
-  background-color: #FFE4B5;
-  border-color: transparent;
-  font-weight: 700;
 }
 
 .source-groups {
@@ -326,15 +319,15 @@ h1 {
 }
 
 .row-gold {
-  background-color: #FFFEF5;
+  background-color: #fffffb;
 }
 
 .row-silver {
-  background-color: #FCFDFF;
+  background-color: #fdfeff;
 }
 
 .row-bronze {
-  background-color: #FFF9F5;
+  background-color: #fffbf8;
 }
 
 .player-info {
@@ -342,7 +335,7 @@ h1 {
   align-items: center;
   width: 100%;
   flex-wrap: nowrap;
-  gap: 8px; /* Увеличено для большего расстояния */
+  gap: 12px; /* Увеличено для большего расстояния */
 }
 
 .position-badge {
@@ -391,11 +384,17 @@ h1 {
   text-decoration: underline;
 }
 
+.rating-container {
+  display: flex;
+  align-items: center;
+  gap: 2px; /* Минимальный зазор между бейджем и рейтингом */
+  margin-left: auto;
+}
+
 .rating {
   font-size: 1rem;
   font-weight: 500;
   color: #151e27;
-  margin-left: auto;
 }
 
 .rating-gold {
@@ -436,7 +435,7 @@ h1 {
   gap: 6px;
   flex-wrap: wrap;
   margin-top: 6px;
-  margin-left: 36px; /* 28px (position-badge) + 8px (gap) */
+  margin-left: 40px; /* 28px (position-badge) + 12px (gap) */
 }
 
 .badge {
@@ -510,7 +509,7 @@ h1 {
   }
 
   .player-info {
-    gap: 6px; /* Увеличено для мобильных */
+    gap: 8px; /* Увеличено для мобильных */
   }
 
   .position-badge {
@@ -528,7 +527,7 @@ h1 {
   }
 
   .player-badges {
-    margin-left: 30px; /* 24px (position-badge) + 6px (gap) */
+    margin-left: 32px; /* 24px (position-badge) + 8px (gap) */
   }
 }
 </style>
