@@ -11,6 +11,7 @@ export const playerStore = defineStore('player', () => {
   const selectedPlayer = ref<Player | null>(null);
   const ratingHistoryByPlayer = ref<Map<string, SpecifiedRatingHistory>>(new Map());
   const similarByPlayer = ref<Map<string, Player[]>>(new Map());
+  const isLoading = ref<boolean>(false);
 
   function selectPlayer(player: Player) {
     selectedPlayer.value = player;
@@ -30,21 +31,27 @@ export const playerStore = defineStore('player', () => {
   }
 
   async function loadPlayerData(playerId: string): Promise<void> {
+    isLoading.value = true;
     return Promise.all([
       loadSimilarPlayers(playerId),
       loadRatingHistory(playerId),
-    ]).then(() => {});
+    ]).then(() => {
+      isLoading.value = false;
+      return undefined;
+    });
   }
 
   async function loadSimilarPlayers(playerId: string): Promise<void> {
-    return playerSimilarities(playerId)
-      .then(function (players: Player[]) {
-        similarByPlayer.value.set(playerId, players);
-      })
-      .catch(function (error: ApiError) {
-        console.error(`Ошибка загрузки похожих игроков: ${error.message}, Статус: ${error.status}`);
-        similarByPlayer.value.set(playerId, []);
-      });
+    return similarByPlayer.value.has(playerId)
+      ? Promise.resolve()
+      : playerSimilarities(playerId)
+        .then(function (players: Player[]) {
+          similarByPlayer.value.set(playerId, players);
+        })
+        .catch(function (error: ApiError) {
+          console.error(`Ошибка загрузки похожих игроков: ${error.message}, Статус: ${error.status}`);
+          similarByPlayer.value.set(playerId, []);
+        });
   }
 
   async function loadRatingHistory(playerId: string): Promise<void> {
@@ -70,5 +77,6 @@ export const playerStore = defineStore('player', () => {
     ratingHistory,
     selectPlayer,
     similarPlayers,
+    isLoading
   };
 });

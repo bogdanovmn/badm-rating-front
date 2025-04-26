@@ -5,7 +5,6 @@
       type="text"
       placeholder="Введите имя игрока"
       class="search-input"
-      @input="onSearchQueryChange"
     />
     <div v-if="suggestions.length" class="suggestions-list">
       <div
@@ -26,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { playerStore } from '@/stores/player';
 import { searchPlayers } from '@/api';
 import type { Player } from '@/api';
@@ -38,7 +37,14 @@ const searchQuery = ref('');
 const suggestions = ref<Player[]>([]);
 
 const debouncedSearchPlayers = debounce(searchPlayers, 450);
-async function onSearchQueryChange() {
+
+async function onPlayerSelect(player: Player) {
+  store.selectPlayer(player);
+  searchQuery.value = '';
+  suggestions.value = [];
+};
+
+watch(searchQuery, () => {
   if (searchQuery.value.length > 2) {
     debouncedSearchPlayers(searchQuery.value)
       ?.then((players: Player[]) => {suggestions.value = players})
@@ -46,14 +52,7 @@ async function onSearchQueryChange() {
   } else {
     suggestions.value = [];
   }
-}
-
-// Выбор игрока
-async function onPlayerSelect(player: Player) {
-  store.selectPlayer(player);
-  searchQuery.value = '';
-  suggestions.value = [];
-};
+});
 
 </script>
 

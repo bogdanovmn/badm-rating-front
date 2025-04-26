@@ -1,36 +1,11 @@
 <template>
   <div class="chart-container">
-    <!-- Группы по source с кнопками playType -->
-    <div class="source-groups">
-      <fieldset
-        v-for="source in Object.values(Source)"
-        :key="source"
-        class="source-group"
-        :disabled="!isSourceAvailable(source)"
-        :data-source="source"
-        :style="{
-          backgroundColor: sourceAttributes[source]!.color.background,
-          borderColor: sourceAttributes[source]!.color.border
-        }"
-      >
-        <legend :style="{ color: sourceAttributes[source]!.color.text }">
-          {{ sourceAttributes[source]!.name }}
-        </legend>
-        <div class="playtype-tabs">
-          <button
-            v-for="type in Object.values(PlayType)"
-            :key="type"
-            :class="{ 'tab-button': true, active: selectedSource === source && selectedPlayType === type }"
-            @click="setRatingFilter(source, type)"
-            :disabled="!isPlayTypeAvailable(source, type)"
-            :style="{ display: isPlayTypeAvailable(source, type) ? 'block' : 'none' }"
-          >
-            {{ type }}
-          </button>
-        </div>
-      </fieldset>
-    </div>
-
+    <SourceTypeFilter
+      :selected-source="selectedSource"
+      :selected-play-type="selectedPlayType"
+      :available-sources="ratingData"
+      @update:filter="setRatingFilter"
+    />
     <!-- График для активного source и playType -->
     <div class="chart-wrapper">
       <Chart
@@ -39,8 +14,8 @@
         :data="chartData"
         :options="chartOptions"
       />
-      <div v-else class="no-data-message">
-        Нет данных для отображения графика
+      <div v-else-if="pStore.isLoading" class="spinner-container">
+        <div class="spinner"></div>
       </div>
     </div>
   </div>
@@ -52,6 +27,8 @@ import { playerStore } from '@/stores/player';
 import { Chart } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, LineController, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
 import { PlayType, Source } from '@/api';
+import { sourceOrder, playTypeOrder } from '@/common';
+import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
 
 ChartJS.register(Title, Tooltip, Legend, LineController, LineElement, CategoryScale, LinearScale, PointElement);
 
@@ -60,34 +37,6 @@ const pStore = playerStore();
 const ratingData = computed(() => pStore.ratingHistory());
 const selectedSource = ref<Source | null>(null);
 const selectedPlayType = ref<PlayType | null>(null);
-
-// Интерфейс для цветов source
-interface SourceAttributes {
-  color: {
-    background: string;
-    border: string;
-    text: string;
-  };
-  name: string;
-}
-const sourceAttributes: Record<Source, SourceAttributes> = {
-  RNBF: {
-    color: {
-      background: '#F0F6FF',
-      border: '#D0E0FF',
-      text: '#6B7280'
-    },
-    name: 'НФБР'
-  },
-  RNBFJunior: {
-    color: {
-      background: '#FFF7ED',
-      border: '#FFE4CC',
-      text: '#6B7280'
-    },
-    name: 'НФБР Юниорский'
-  }
-};
 
 // Цвета для playType
 const playTypeColors: Record<PlayType, string> = {
@@ -98,24 +47,11 @@ const playTypeColors: Record<PlayType, string> = {
   XD: '#4BC0C0',
 };
 
-// Порядок отображения и выбора
-const sourceOrder: Source[] = [Source.RNBFJunior, Source.RNBF];
-const playTypeOrder: PlayType[] = [PlayType.MS, PlayType.MD, PlayType.WS, PlayType.WD, PlayType.XD];
-
-function isPlayTypeAvailable(source: Source, playType: PlayType): boolean {
-  return isSourceAvailable(source) && ratingData.value.get(source)!.has(playType);
-}
-
-function isSourceAvailable(source: Source): boolean {
-  return ratingData.value.has(source);
-}
 
 // Установка активного source и playType
-function setRatingFilter(source: Source, type: PlayType) {
-  if (isPlayTypeAvailable(source, type)) {
-    selectedSource.value = source;
-    selectedPlayType.value = type;
-  }
+function setRatingFilter({ source, playType }: { source: Source; playType: PlayType }) {
+  selectedSource.value = source;
+  selectedPlayType.value = playType;
 }
 
 // Инициализация выбора source и playType
@@ -196,6 +132,27 @@ const chartOptions = {
 </script>
 
 <style scoped>
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #42A5F5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .chart-container {
   width: 100%;
   margin: 0;

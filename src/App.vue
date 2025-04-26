@@ -2,7 +2,7 @@
   <div id="app">
     <nav class="navbar">
       <RouterLink to="/player">Игрок</RouterLink>
-      <!-- <RouterLink to="/top">ТОП</RouterLink> -->
+      <RouterLink to="/top">ТОП</RouterLink>
       <RouterLink to="/about">О проекте</RouterLink>
     </nav>
     <div class="content">

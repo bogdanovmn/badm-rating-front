@@ -1,93 +1,47 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { playersTop } from '@/api';
-import type { TopPlayers } from '@/api';
+import type { TopPlayers, TopType, Source, PlayType } from '@/api';
 
-export const useTopPlayersStore = defineStore('topPlayers', () => {
-  // Состояние для типа топа
-  const topType = ref<'actual' | 'all-time'>('actual');
+interface TopKey {
+  topType: TopType;
+  source: Source;
+  playType: PlayType;
+}
 
-  // Кэшированные данные для каждого типа топа
-  const actualTopGroups = ref<TopPlayers[]>([]);
-  const topGroups = ref<TopPlayers[]>([]);
+export const topPlayersStore = defineStore('topPlayers', () => {
+  const topData = ref<Map<string, TopPlayers[]>>(new Map());
+  const isLoading = ref<boolean>(false);
 
-  // Выбранная группа (source и type)
-  const selectedGroup = ref<{ source: string; type: string } | null>(null);
+  function getTopKey({ topType, source, playType }: TopKey): string {
+    return `${topType}_${source}_${playType}`;
+  }
 
-  // Флаг загрузки
-  const isLoading = ref(false);
-
-  // Текущие группы в зависимости от типа топа
-  const groups = computed(() => {
-    return topType.value === 'actual' ? actualTopGroups.value : topGroups.value;
-  });
-
-  // Данные выбранной группы
-  const selectedGroupData = computed(() => {
-    if (!selectedGroup.value) return [];
-    const currentGroups = groups.value;
-    const group = currentGroups.find(
-      (g) => g.source === selectedGroup.value!.source && g.type === selectedGroup.value!.type
-    );
-    return group ? group.data : [];
-  });
-
-  // Загрузка данных топа
-  const fetchTopPlayers = async () => {
-    // Если данные уже загружены, не загружаем повторно
-    if (
-      (topType.value === 'actual' && actualTopGroups.value.length > 0) ||
-      (topType.value === 'all-time' && topGroups.value.length > 0)
-    ) {
+  async function loadTopPlayers(topType: TopType, source: Source, playType: PlayType): Promise<void> {
+    const key = getTopKey({ topType, source, playType });
+    if (topData.value.has(key)) {
       return;
     }
 
     isLoading.value = true;
     try {
-      const apiCall = topType.value === 'actual' ? getTopActualPlayers : getTopPlayers;
-      const response = await apiCall();
-      const data = response.data as TopPlayerGroup[];
-      if (topType.value === 'actual') {
-        actualTopGroups.value = data;
-      } else {
-        topGroups.value = data;
-      }
-    } catch (error) {
-      console.error(`Failed to fetch ${topType.value} top players:`, error);
-      if (topType.value === 'actual') {
-        actualTopGroups.value = [];
-      } else {
-        topGroups.value = [];
-      }
+      const data = await playersTop(topType, source, playType);
+      topData.value.set(key, data);
+    } catch (error: any) {    
+      topData.value.set(key, []);
     } finally {
       isLoading.value = false;
     }
-  };
+  }
 
-  // Выбор группы
-  const selectGroup = (source: string, type: string) => {
-    selectedGroup.value = { source, type };
-    fetchTopPlayers();
-  };
-
-  // Переключение типа топа
-  const selectTopType = (type: 'actual' | 'all-time') => {
-    topType.value = type;
-    // Если группа не выбрана, устанавливаем по умолчанию
-    if (!selectedGroup.value) {
-      selectedGroup.value = { source: 'RNBF', type: 'MS' };
-    }
-    fetchTopPlayers();
-  };
+  function getTopPlayers(topType: TopType, source: Source, playType: PlayType): TopPlayers[] {
+    const key = getTopKey({ topType, source, playType });
+    return topData.value.get(key) || [];
+  }
 
   return {
-    topType,
-    groups,
-    selectedGroup,
-    selectedGroupData,
     isLoading,
-    fetchTopPlayers,
-    selectGroup,
-    selectTopType,
+    loadTopPlayers,
+    getTopPlayers,
   };
 });

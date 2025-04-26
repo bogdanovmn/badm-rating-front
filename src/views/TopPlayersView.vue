@@ -1,50 +1,26 @@
 <template>
   <div class="top-players-container">
-    <!-- Заголовок с динамической датой -->
-    <h1 class="text-2xl font-bold mb-3">
-      {{ topType === 'actual' ? `Текущий топ на ${formatDate(selectedGroupData[0]?.updatedAt)}` : 'Топ игроков за все время' }}
-    </h1>
-
-    <!-- Одна кнопка для переключения -->
-    <div class="top-type-toggle mb-4">
-      <button class="toggle-button" @click="selectTopType(topType === 'actual' ? 'all-time' : 'actual')">
-        {{ topType === 'actual' ? 'Показать за все время' : 'Показать текущий топ' }}
+    <h1>{{ topType === TopType.Actual ? `ТОП игроков на ${formatDate(selectedGroupData[0]?.updatedAt)}` : 'ТОП игроков за все время' }}</h1>
+    
+    <div class="top-type-toggle">
+      <button
+        class="toggle-button"
+        @click="toggleTopType"
+      >
+        {{ topType === TopType.Actual ? 'Показать за все время' : 'Показать актуальный' }}
       </button>
     </div>
 
-    <!-- Группы по source с кнопками type -->
-    <div class="source-groups">
-      <fieldset
-        v-for="source in sources"
-        :key="source"
-        class="source-group"
-        :style="{
-          backgroundColor: sourceColors[source]?.background || '#FAFAFA',
-          borderColor: sourceColors[source]?.border || '#F5F5F5'
-        }"
-      >
-        <legend :style="{ color: sourceColors[source]?.text || '#A0A0A0' }">
-          {{ mapSourceName(source) }}
-        </legend>
-        <div class="playtype-tabs">
-          <button
-            v-for="type in getTypesForSource(source)"
-            :key="type"
-            :class="{ 'tab-button': true, active: selectedGroup?.source === source && selectedGroup?.type === type }"
-            @click="selectGroup(source, type)"
-          >
-            {{ type }}
-          </button>
-        </div>
-      </fieldset>
-    </div>
+    <SourceTypeFilter
+      :selected-source="selectedSource"
+      :selected-play-type="selectedPlayType"
+      @update:filter="updateFilter"
+    />
 
-    <!-- Спиннер при загрузке -->
     <div v-if="isLoading" class="spinner-container">
       <div class="spinner"></div>
     </div>
 
-    <!-- Список игроков -->
     <div v-else-if="selectedGroupData.length" class="players-list">
       <div
         v-for="item in selectedGroupData"
@@ -76,9 +52,8 @@
               'change-negative': item.positionChange < 0
             }"
           >
-            {{ formatPositionChange(item.positionChange) }}
+            {{ changeValueFormatted(item.positionChange) }}
           </span>
-          <!-- Контейнер для рейтинга и бейджа изменения рейтинга -->
           <div class="rating-container">
             <span
               v-if="item.ratingChange !== 0"
@@ -88,7 +63,7 @@
                 'change-negative': item.ratingChange < 0
               }"
             >
-              {{ formatRatingChange(item.ratingChange) }}
+              {{ changeValueFormatted(item.ratingChange) }}
             </span>
             <span
               class="rating"
@@ -108,8 +83,9 @@
           <span v-if="item.player.details.rank !== 'NO_RANK'" class="badge badge-secondary">
             {{ item.player.details.rank }}
           </span>
-          <!-- Дата показывается только для all-time -->
-          <span v-if="topType === 'all-time'" class="badge badge-secondary badge-date">{{ formatDate(item.updatedAt) }}</span>
+          <span v-if="topType === TopType.Global" class="badge badge-secondary badge-date">
+            {{ formatDate(item.updatedAt) }}
+          </span>
         </div>
       </div>
     </div>
@@ -118,104 +94,54 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useTopPlayersStore } from '@/stores/top';
+import { topPlayersStore } from '@/stores/top';
 import { playerStore } from '@/stores/player';
-import type { TopPlayers, Player } from '@/api';
+import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
+import { type Player, TopType, Source, PlayType } from '@/api';
 
-const store = useTopPlayersStore();
+const topStore = topPlayersStore();
 const storePlayer = playerStore();
 const router = useRouter();
 
-// Получаем данные из store
-const groups = computed(() => store.groups);
-const selectedGroup = computed(() => store.selectedGroup);
-const selectedGroupData = computed(() => store.selectedGroupData);
-const isLoading = computed(() => store.isLoading);
-const topType = computed(() => store.topType);
+const topType = ref<TopType>(TopType.Actual);
+const selectedSource = ref<Source>(Source.RNBFJunior);
+const selectedPlayType = ref<PlayType>(PlayType.MS);
+const isLoading = computed(() => topStore.isLoading);
 
-// Тип для ключей source
-type SourceType = 'RNBF' | 'RNBFJunior';
+const selectedGroupData = computed(() => {
+  return topStore.getTopPlayers(topType.value, selectedSource.value, selectedPlayType.value);
+});
 
-// Цвета для source
-const sourceColors: Record<SourceType, { background: string; border: string; text: string }> = {
-  RNBF: { background: '#F0F6FF', border: '#D0E0FF', text: '#6B7280' },
-  RNBFJunior: { background: '#FFF7ED', border: '#FFE4CC', text: '#6B7280' },
-};
+function toggleTopType(): void {
+  topType.value = topType.value === TopType.Actual ? TopType.Global : TopType.Actual;
+}
 
-// Маппинг имен source
-const sourceNameMap: Record<SourceType, string> = {
-  RNBF: 'НФБР',
-  RNBFJunior: 'НФБР Юниорский',
-};
+function updateFilter({ source, playType }: { source: Source; playType: PlayType }): void {
+  selectedSource.value = source;
+  selectedPlayType.value = playType;
+}
 
-// Список playType
-const playTypes = ['MS', 'WS', 'MD', 'WD', 'XD'] as const;
-// Уникальные source
-const sources: SourceType[] = ['RNBF', 'RNBFJunior'];
-const mapSourceName = (source: SourceType) => sourceNameMap[source] || source;
-
-// Получение type для конкретного source
-const getTypesForSource = (source: string) => {
-  return groups.value.filter((g) => g.source === source).map((g) => g.type);
-};
-
-// Выбор типа топа
-const selectTopType = (type: 'actual' | 'all-time') => {
-  store.selectTopType(type);
-};
-
-// Выбор группы
-const selectGroup = (source: string, type: string) => {
-  store.selectGroup(source, type);
-};
-
-// Форматирование даты
-const formatDate = (date: string | undefined) => {
+const formatDate = (date: string | undefined): string => {
   if (!date) return '';
   return new Date(date).toLocaleDateString('ru-RU');
 };
 
-// Форматирование изменения позиции
-const formatPositionChange = (change: number) => {
+const changeValueFormatted = (change: number): string => {
   if (change > 0) return `↑ ${change}`;
   if (change < 0) return `↓ ${Math.abs(change)}`;
   return '';
 };
 
-// Форматирование изменения рейтинга
-const formatRatingChange = (change: number) => {
-  if (change > 0) return `↑ ${change}`;
-  if (change < 0) return `↓ ${Math.abs(change)}`;
-  return '';
+const goToPlayerRatings = async (player: Player): Promise<void> => {
+  storePlayer.selectPlayer(player);
+  await router.push('/player');
 };
 
-// Переход на домашнюю страницу с графиком игрока
-const goToPlayerRatings = async (player: Player) => {
-  try {
-    console.log('Selected player:', player); // Отладка: проверяем данные игрока
-
-    // Установка source и type
-    if (selectedGroup.value?.source && selectedGroup.value?.type) {
-      storePlayer.selectSource(selectedGroup.value.source);
-      storePlayer.selectType(selectedGroup.value.type);
-    }
-
-    storePlayer.selectPlayer(player); // Устанавливаем игрока с полными данными
-    await storePlayer.fetchRatings(player.id); // Загружаем рейтинги
-    router.push('/'); // Переходим на домашнюю страницу
-  } catch (error) {
-    console.error('Error fetching player ratings:', error);
-    router.push('/'); // Переходим, даже если ошибка
-  }
-};
-
-// Загрузка данных при монтировании
-onMounted(() => {
-  store.selectTopType('actual'); // Устанавливаем Текущий топ
-  store.selectGroup('RNBF', 'MS'); // Устанавливаем RNBF, MS по умолчанию
-});
+watch([topType, selectedSource, selectedPlayType], async () => {
+  await topStore.loadTopPlayers(topType.value, selectedSource.value, selectedPlayType.value);
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -246,64 +172,11 @@ h1 {
   color: #333;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-  background-color: #FFE4B5; /* Всегда активная */
+  background-color: #FFE4B5;
 }
 
 .toggle-button:hover {
   background-color: #E5E7EB;
-}
-
-.source-groups {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.source-group {
-  border-radius: 8px;
-  padding: 10px;
-  min-width: 160px;
-  box-sizing: border-box;
-  border-width: 0.5px;
-}
-
-.source-group legend {
-  font-size: 0.9rem;
-  font-weight: 400;
-  padding: 0 8px;
-  margin: 0;
-}
-
-.playtype-tabs {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-}
-
-.tab-button {
-  flex: 1;
-  padding: 6px 12px;
-  font-size: 0.9rem;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  color: #333;
-  cursor: pointer;
-  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-  text-align: center;
-  background-color: #FFFAF0;
-}
-
-.tab-button:hover {
-  border-color: #999;
-}
-
-.tab-button.active {
-  color: #333;
-  font-weight: 700;
-  border-color: transparent;
-  background-color: #FFE4B5;
 }
 
 .players-list {
@@ -335,7 +208,7 @@ h1 {
   align-items: center;
   width: 100%;
   flex-wrap: nowrap;
-  gap: 12px; /* Увеличено для большего расстояния */
+  gap: 12px;
 }
 
 .position-badge {
@@ -387,7 +260,7 @@ h1 {
 .rating-container {
   display: flex;
   align-items: center;
-  gap: 2px; /* Минимальный зазор между бейджем и рейтингом */
+  gap: 2px;
   margin-left: auto;
 }
 
@@ -413,7 +286,7 @@ h1 {
 }
 
 .change-badge {
-  padding: 2px 6px;
+  padding: 6px;
   border-radius: 8px;
   font-size: 0.625rem;
   font-weight: 500;
@@ -435,7 +308,7 @@ h1 {
   gap: 6px;
   flex-wrap: wrap;
   margin-top: 6px;
-  margin-left: 40px; /* 28px (position-badge) + 12px (gap) */
+  margin-left: 40px;
 }
 
 .badge {
@@ -488,28 +361,8 @@ h1 {
     font-size: 0.9rem;
   }
 
-  .source-groups {
-    flex-direction: column;
-    gap: 10px;
-    align-items: center;
-  }
-
-  .source-group {
-    width: 100%;
-    padding: 8px;
-  }
-
-  .source-group legend {
-    font-size: 0.85rem;
-  }
-
-  .tab-button {
-    padding: 5px 10px;
-    font-size: 0.85rem;
-  }
-
   .player-info {
-    gap: 8px; /* Увеличено для мобильных */
+    gap: 8px;
   }
 
   .position-badge {
@@ -527,7 +380,7 @@ h1 {
   }
 
   .player-badges {
-    margin-left: 32px; /* 24px (position-badge) + 8px (gap) */
+    margin-left: 32px;
   }
 }
 </style>
