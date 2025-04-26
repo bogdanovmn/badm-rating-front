@@ -5,14 +5,14 @@
       type="text"
       placeholder="Введите имя игрока"
       class="search-input"
-      @input="handleInput"
+      @input="onSearchQueryChange"
     />
     <div v-if="suggestions.length" class="suggestions-list">
       <div
         v-for="player in suggestions"
         :key="player.id"
         class="player-row"
-        @click="onSelectPlayer(player)"
+        @click="onPlayerSelect(player)"
       >
         <span class="player-name">{{ player.details.name }}</span>
         <div class="player-badges">
@@ -22,62 +22,39 @@
         </div>
       </div>
     </div>
-    <div v-if="isLoading" class="spinner-container">
-      <div class="spinner"></div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { usePlayerStore } from '@/stores/player';
+import { ref } from 'vue';
+import { playerStore } from '@/stores/player';
+import { searchPlayers } from '@/api';
 import type { Player } from '@/api';
 import { debounce } from 'lodash';
 
-const store = usePlayerStore();
-const { fetchSuggestions, fetchRatings, clearSuggestions, selectPlayer, selectSource, selectType } = store;
-const router = useRouter();
+const store = playerStore();
 
 const searchQuery = ref('');
-const isLoading = ref(false);
+const suggestions = ref<Player[]>([]);
 
-// Данные из стора
-const suggestions = computed(() => store.suggestions);
-const debouncedFetchSuggestions = debounce(fetchSuggestions, 450);
-
-// Обработка ввода в поиск
-const handleInput = async () => {
-  debouncedFetchSuggestions(searchQuery.value);
-};
+const debouncedSearchPlayers = debounce(searchPlayers, 450);
+async function onSearchQueryChange() {
+  if (searchQuery.value.length > 2) {
+    debouncedSearchPlayers(searchQuery.value)
+      ?.then((players: Player[]) => {suggestions.value = players})
+      .catch(() => suggestions.value = []);
+  } else {
+    suggestions.value = [];
+  }
+}
 
 // Выбор игрока
-const onSelectPlayer = async (player: Player) => {
-  try {
-    selectPlayer(player); // Передаем полный объект Player, очищает suggestions
-    searchQuery.value = ''; // Сбрасываем поле ввода
-    await fetchRatings(player.id);
-
-    // Устанавливаем source и type (берем первую доступную группу из ratings)
-    if (store.ratings.length > 0) {
-      const firstRating = store.ratings[0];
-      selectSource(firstRating.source);
-      selectType(firstRating.playType);
-    }
-
-    router.push('/'); // Переходим на страницу графика
-  } catch (error) {
-    console.error('Error selecting player:', error);
-    router.push('/'); // Переходим, даже если ошибка
-  }
+async function onPlayerSelect(player: Player) {
+  store.selectPlayer(player);
+  searchQuery.value = '';
+  suggestions.value = [];
 };
 
-// Очистка предложений при изменении запроса
-watch(searchQuery, () => {
-  if (!searchQuery.value) {
-    clearSuggestions();
-  }
-});
 </script>
 
 <style scoped>

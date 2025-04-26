@@ -1,87 +1,74 @@
-// stores/player.ts
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getPlayerRatings, searchPlayers, similaritiesPlayers } from '@/api'; // Добавляем similaritiesPlayers
-import type { Player, Rating } from '@/api';
 
-export const usePlayerStore = defineStore('player', () => {
+import type { ApiError } from '@/api/common';
+import { playerRatingHistory, playerSimilarities } from '@/api';
+import type { Player, RatingHistory, RatingHistoryPoints, Source, PlayType } from '@/api';
+
+export type SpecifiedRatingHistory = Map<Source, Map<PlayType, RatingHistoryPoints>>;
+
+export const playerStore = defineStore('player', () => {
   const selectedPlayer = ref<Player | null>(null);
-  const ratings = ref<Rating[]>([]);
-  const suggestions = ref<Player[]>([]);
-  const similarPlayers = ref<Player[]>([]); // Новое состояние для похожих игроков
-  const selectedSource = ref<string | null>(null);
-  const selectedType = ref<string | null>(null);
+  const ratingHistoryByPlayer = ref<Map<string, SpecifiedRatingHistory>>(new Map());
+  const similarByPlayer = ref<Map<string, Player[]>>(new Map());
 
-  const selectPlayer = (player: Player) => {
+  function selectPlayer(player: Player) {
     selectedPlayer.value = player;
-    suggestions.value = []; // Очищаем список предложений при выборе игрока
-    similarPlayers.value = []; // Очищаем список похожих игроков при выборе нового игрока
+    loadPlayerData(player.id)
   };
 
-  const fetchRatings = async (playerId: string) => {
-    try {
-      const response = await getPlayerRatings(playerId);
-      ratings.value = response.data; // API возвращает Rating[]
-    } catch (error) {
-      console.error('Failed to fetch ratings:', error);
-      ratings.value = [];
-    }
-  };
+  function similarPlayers(): Player[] {
+    return selectedPlayer.value == null
+      ? []
+      : similarByPlayer.value.get(selectedPlayer.value.id) || []
+  }
 
-  const fetchSuggestions = async (query: string) => {
-    if (query.length < 3) {
-      suggestions.value = [];
-    } else {
-      try {
-        const response = await searchPlayers(query);
-        suggestions.value = response.data; // API возвращает Player[]
-      } catch (error) {
-        console.error('Failed to fetch suggestions:', error);
-        suggestions.value = [];
-      }
-    }
-  };
+  function ratingHistory(): SpecifiedRatingHistory {
+    return selectedPlayer.value == null
+      ? new Map()
+      : ratingHistoryByPlayer.value.get(selectedPlayer.value.id) || new Map()
+  }
 
-  const fetchSimilarPlayers = async (playerId: string) => {
-    try {
-      const response = await similaritiesPlayers(playerId);
-      similarPlayers.value = response.data; // API возвращает Player[]
-    } catch (error) {
-      console.error('Failed to fetch similar players:', error);
-      similarPlayers.value = [];
-    }
-  };
+  async function loadPlayerData(playerId: string): Promise<void> {
+    return Promise.all([
+      loadSimilarPlayers(playerId),
+      loadRatingHistory(playerId),
+    ]).then(() => {});
+  }
 
-  const clearSuggestions = () => {
-    suggestions.value = [];
-  };
+  async function loadSimilarPlayers(playerId: string): Promise<void> {
+    return playerSimilarities(playerId)
+      .then(function (players: Player[]) {
+        similarByPlayer.value.set(playerId, players);
+      })
+      .catch(function (error: ApiError) {
+        console.error(`Ошибка загрузки похожих игроков: ${error.message}, Статус: ${error.status}`);
+        similarByPlayer.value.set(playerId, []);
+      });
+  }
 
-  const clearSimilarPlayers = () => {
-    similarPlayers.value = [];
-  };
-
-  const selectSource = (source: string) => {
-    selectedSource.value = source;
-  };
-
-  const selectType = (type: string) => {
-    selectedType.value = type;
-  };
+  async function loadRatingHistory(playerId: string): Promise<void> {
+    return playerRatingHistory(playerId)
+      .then(function (rh: RatingHistory[]) {
+        ratingHistoryByPlayer.value.set(playerId, new Map());
+        const prh = ratingHistoryByPlayer.value.get(playerId)!;
+        for (const r of rh) {
+          if (!prh.has(r.source)) {
+            prh.set(r.source, new Map());
+          }
+          prh.get(r.source)!.set(r.playType, r.data);
+        }
+      })
+      .catch(function (error: ApiError) {
+        console.error(`Ошибка загрузки рейтингов игрока: ${error.message}, Статус: ${error.status}`);
+        ratingHistoryByPlayer.value.set(playerId, new Map());
+      });
+  }
 
   return {
     selectedPlayer,
-    ratings,
-    suggestions,
-    similarPlayers, // Экспортируем новое состояние
-    selectedSource,
-    selectedType,
+    ratingHistory,
     selectPlayer,
-    fetchRatings,
-    fetchSuggestions,
-    fetchSimilarPlayers, // Экспортируем новый метод
-    clearSuggestions,
-    clearSimilarPlayers, // Экспортируем метод очистки
-    selectSource,
-    selectType,
+    similarPlayers,
   };
 });

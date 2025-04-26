@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { getTopPlayers, getTopActualPlayers, type TopPlayerGroup } from '@/api';
+import { playersTop } from '@/api';
+import type { TopPlayers } from '@/api';
 
 export const useTopPlayersStore = defineStore('topPlayers', () => {
   // Состояние для типа топа
   const topType = ref<'actual' | 'all-time'>('actual');
 
   // Кэшированные данные для каждого типа топа
-  const actualTopGroups = ref<TopPlayerGroup[]>([]);
-  const topGroups = ref<TopPlayerGroup[]>([]);
+  const actualTopGroups = ref<TopPlayers[]>([]);
+  const topGroups = ref<TopPlayers[]>([]);
 
   // Выбранная группа (source и type)
   const selectedGroup = ref<{ source: string; type: string } | null>(null);

@@ -1,4 +1,22 @@
-import axios from 'axios';
+import { makeApiRequest } from './common'
+
+export enum TopType {
+  Global = 'global',
+  Actual = 'actual',
+}
+
+export enum Source {
+  RNBFJunior = 'RNBFJunior',
+  RNBF = 'RNBF',
+}
+
+export enum PlayType {
+  MS = 'MS',
+  MD = 'MD',
+  WS = 'WS',
+  WD = 'WD',
+  XD = 'XD',
+}
 
 export interface Player {
   id: string;
@@ -11,47 +29,38 @@ export interface Player {
   };
 }
 
-export interface Rating {
-  source: string;
-  playType: string;
-  data: {
-    [date: string]: number;
-  };
+export interface RatingHistoryPoints {
+  [date: string]: number;
 }
 
-export interface TopPlayerData {
+export interface RatingHistory {
+  source: Source;
+  playType: PlayType;
+  data: RatingHistoryPoints;
+}
+
+export interface TopPlayers {
   player: Player;
   position: number;
+  positionChange: number;
   rating: number;
   ratingChange: number;
-  positionChange: number;
   updatedAt: string;
 }
 
-export interface TopPlayerGroup {
-  type: string;
-  source: string;
-  data: TopPlayerData[];
+// API-методы
+export async function searchPlayers(term: string): Promise<Player[]> {
+  return makeApiRequest<Player[]>('get', '/players', { term });
 }
 
-const apiUrl = import.meta.env.VITE_API_URL;
-console.log('API URL:', apiUrl);
+export async function playerSimilarities(playerId: string): Promise<Player[]> {
+  return makeApiRequest<Player[]>('get', `/players/${playerId}/similarities`);
+}
 
-const api = axios.create({
-  baseURL: apiUrl,
-});
+export async function playerRatingHistory(playerId: string): Promise<RatingHistory[]> {
+  return makeApiRequest<RatingHistory[]>('get', `/players/${playerId}/rating-history`);
+}
 
-export const searchPlayers = (term: string) =>
-  api.get('/players', { params: { term } });
-
-export const similaritiesPlayers = (playerId: string) =>
-  api.get(`/players/${playerId}/similarities`);
-
-export const getPlayerRatings = (playerId: string) =>
-  api.get(`/players/${playerId}`);
-
-export const getTopPlayers = () =>
-  api.get('/players/statistic/top');
-
-export const getTopActualPlayers = () =>
-  api.get('/players/statistic/actual-top');
+export async function playersTop(topType: TopType, source: Source, playType: PlayType): Promise<TopPlayers[]> {
+  return makeApiRequest<TopPlayers[]>('get', `/top/${topType}`, { source, playType });
+}

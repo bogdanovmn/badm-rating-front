@@ -121,11 +121,11 @@
 import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTopPlayersStore } from '@/stores/top';
-import { usePlayerStore } from '@/stores/player';
-import type { TopPlayerGroup, Player } from '@/api';
+import { playerStore } from '@/stores/player';
+import type { TopPlayers, Player } from '@/api';
 
 const store = useTopPlayersStore();
-const storePlayer = usePlayerStore();
+const storePlayer = playerStore();
 const router = useRouter();
 
 // Получаем данные из store
