@@ -1,28 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { playersTop } from '@/api';
-import type { TopPlayers, TopType, Source, PlayType } from '@/api';
+import type { TopPlayer, TopType, Source, PlayType } from '@/api';
+import { TopKey } from '@/common';
 
-interface TopKey {
-  topType: TopType;
-  source: Source;
-  playType: PlayType;
-}
 
 export const topPlayersStore = defineStore('topPlayers', () => {
-  const topData = ref<Map<string, TopPlayers[]>>(new Map());
+  const topData = ref<Map<string, TopPlayer[]>>(new Map());
   const isLoading = ref<boolean>(false);
 
-  function getTopKey({ topType, source, playType }: TopKey): string {
-    return `${topType}_${source}_${playType}`;
-  }
-
   async function loadTopPlayers(topType: TopType, source: Source, playType: PlayType): Promise<void> {
-    const key = getTopKey({ topType, source, playType });
+    const key = new TopKey(topType, source, playType).value();
     if (topData.value.has(key)) {
       return;
     }
-
     isLoading.value = true;
     try {
       const data = await playersTop(topType, source, playType);
@@ -34,8 +25,8 @@ export const topPlayersStore = defineStore('topPlayers', () => {
     }
   }
 
-  function getTopPlayers(topType: TopType, source: Source, playType: PlayType): TopPlayers[] {
-    const key = getTopKey({ topType, source, playType });
+  function getTopPlayers(topType: TopType, source: Source, playType: PlayType): TopPlayer[] {
+    const key = new TopKey(topType, source, playType).value();
     return topData.value.get(key) || [];
   }
 

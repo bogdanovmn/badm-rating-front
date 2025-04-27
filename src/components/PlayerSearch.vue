@@ -36,19 +36,28 @@ const store = playerStore();
 const searchQuery = ref('');
 const suggestions = ref<Player[]>([]);
 
-const debouncedSearchPlayers = debounce(searchPlayers, 450);
-
 async function onPlayerSelect(player: Player) {
   store.selectPlayer(player);
   searchQuery.value = '';
   suggestions.value = [];
 };
 
-watch(searchQuery, () => {
-  if (searchQuery.value.length > 2) {
-    debouncedSearchPlayers(searchQuery.value)
-      ?.then((players: Player[]) => {suggestions.value = players})
-      .catch(() => suggestions.value = []);
+// Дебаунс-функция для поиска игроков
+const debouncedSearch = debounce(async (query: string): Promise<void> => {
+  try {
+    console.log(`Поиск игроков для запроса: "${query}"`);
+    const players = await searchPlayers(query);
+    console.log(`Получено ${players.length} игроков:`, players);
+    suggestions.value = players;
+  } catch (error: unknown) {
+    suggestions.value = [];
+  }
+}, 450);
+
+// Наблюдение за поисковым запросом
+watch(searchQuery, (newQuery) => {
+  if (newQuery.length > 2) {
+    debouncedSearch(newQuery);
   } else {
     suggestions.value = [];
   }
@@ -117,27 +126,6 @@ watch(searchQuery, () => {
   border-radius: 10px;
   font-size: 0.75rem;
   font-weight: 500;
-}
-
-.spinner-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100px;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #42A5F5;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {
