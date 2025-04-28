@@ -60,11 +60,7 @@
           </div>
         </div>
         <div class="player-badges">
-          <span class="badge">{{ item.player.details.year }}</span>
-          <span class="badge badge-secondary">{{ item.player.details.region }}</span>
-          <span v-if="item.player.details.rank !== 'NO_RANK'" class="badge badge-secondary">
-            {{ item.player.details.rank }}
-          </span>
+          <PlayerAttributes :player="item.player" :no-wrapper="true" />
           <span v-if="topType === TopType.Global" class="badge badge-secondary badge-date">
             {{ formatDate(item.updatedAt) }}
           </span>
@@ -78,6 +74,7 @@ import { useRouter } from 'vue-router';
 import { playerStore } from '@/stores/player';
 import { type Player, type TopPlayer, TopType } from '@/api';
 import { formatDate } from '@/common';
+import PlayerAttributes from './PlayerAttributes.vue';
 
 const props = defineProps<{
   topPlayers: TopPlayer[];

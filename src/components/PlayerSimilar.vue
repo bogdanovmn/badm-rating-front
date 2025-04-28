@@ -12,11 +12,7 @@
         @click="onSelect(sp)"
       >
         <span class="player-name">{{ sp.details.name }}</span>
-        <div class="player-badges">
-          <span class="badge">{{ sp.details.year }}</span>
-          <span class="badge">{{ sp.details.region }}</span>
-          <span v-if="sp.details.rank !== 'NO_RANK'" class="badge">{{ sp.details.rank }}</span>
-        </div>
+        <PlayerAttributes :player="sp" />
       </div>
     </div>
   </div>
@@ -26,6 +22,7 @@
 import { computed } from 'vue';
 import { playerStore } from '@/stores/player';
 import type { Player } from '@/api';
+import PlayerAttributes from './PlayerAttributes.vue';
 
 const pStore = playerStore();
 
@@ -89,21 +86,6 @@ async function onSelect(player: Player): Promise<void> {
   color: #151e27;
 }
 
-.player-badges {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.badge {
-  background-color: #F0F4F8;
-  color: #151e27;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
 @media (max-width: 768px) {
   .suggestions-list {
     max-width: 100%;
@@ -116,11 +98,6 @@ async function onSelect(player: Player): Promise<void> {
 
   .player-name {
     font-size: 1.1rem;
-  }
-
-  .badge {
-    font-size: 0.7rem;
-    padding: 2px 6px;
   }
 
   .warning-title {

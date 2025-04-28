@@ -14,11 +14,7 @@
         @click="onPlayerSelect(player)"
       >
         <span class="player-name">{{ player.details.name }}</span>
-        <div class="player-badges">
-          <span class="badge">{{ player.details.year }}</span>
-          <span class="badge">{{ player.details.region }}</span>
-          <span v-if="player.details.rank !== 'NO_RANK'" class="badge">{{ player.details.rank }}</span>
-        </div>
+        <PlayerAttributes :player="player" />
       </div>
     </div>
   </div>
@@ -30,6 +26,7 @@ import { playerStore } from '@/stores/player';
 import { searchPlayers } from '@/api';
 import type { Player } from '@/api';
 import { debounce } from 'lodash';
+import PlayerAttributes from './PlayerAttributes.vue';
 
 const store = playerStore();
 
@@ -112,22 +109,6 @@ watch(searchQuery, (newQuery) => {
   color: #151e27;
 }
 
-.player-badges {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.badge {
-  background-color: #F0F4F8;
-  color: #151e27;
-  padding: 3px 8px;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
 @media (max-width: 768px) {
   .search-input {
     max-width: 100%;
@@ -144,11 +125,6 @@ watch(searchQuery, (newQuery) => {
 
   .player-name {
     font-size: 1.1rem;
-  }
-
-  .badge {
-    font-size: 0.7rem;
-    padding: 2px 6px;
   }
 }
 </style>
