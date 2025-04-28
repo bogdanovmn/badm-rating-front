@@ -3,7 +3,7 @@ import { ref } from 'vue';
 
 import type { ApiError } from '@/api/common';
 import { playerRatingHistory, playerSimilarities, playerTopContext } from '@/api';
-import { type Player, type RatingHistory, type RatingHistoryPoints, Source, TopType, type PlayType, type TopPlayers } from '@/api';
+import { type Player, type RatingHistory, type RatingHistoryPoints, Source, TopType, type PlayType, type TopPlayer } from '@/api';
 import { TopKey } from '@/common';
 
 export type SpecifiedRatingHistory = Map<Source, Map<PlayType, RatingHistoryPoints>>;
@@ -14,7 +14,7 @@ export const playerStore = defineStore('player', () => {
   const selectedPlayType = ref<PlayType | null>(null);
   const ratingHistoryByPlayer = ref<Map<string, SpecifiedRatingHistory>>(new Map());
   const similarByPlayer = ref<Map<string, Player[]>>(new Map());
-  const topContextByPlayer = ref<Map<string, Map<string, TopPlayers[]>>>(new Map());
+  const topContextByPlayer = ref<Map<string, Map<string, TopPlayer[]>>>(new Map());
   const isLoading = ref<boolean>(false);
   const isTopContextLoading = ref<boolean>(false);
 
@@ -35,7 +35,7 @@ export const playerStore = defineStore('player', () => {
       : ratingHistoryByPlayer.value.get(selectedPlayer.value.id) || new Map()
   }
 
-  function topContext(topType: TopType): TopPlayers[] {
+  function topContext(topType: TopType): TopPlayer[] {
     if (selectedPlayer.value == null || selectedSource.value == null || selectedPlayType.value == null) {
       return [];
     } else {
@@ -102,7 +102,7 @@ export const playerStore = defineStore('player', () => {
     return topContextByPlayer.value.get(playerId)!.has(key)
       ? Promise.resolve()
       : playerTopContext(playerId, topType, selectedSource.value, selectedPlayType.value!)
-        .then(function (top: TopPlayers[]) {
+        .then(function (top: TopPlayer[]) {
           topContextByPlayer.value.get(playerId)!.set(key, top);
         })
         .catch(function (error: ApiError) {
