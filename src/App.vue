@@ -59,11 +59,16 @@ body {
   text-decoration: none;
   color: #0066cc;
   font-weight: 600;
+  padding: 5px;
   transition: color 0.3s ease;
 }
 
-.navbar a:hover {
-  color: #004c99;
+.navbar .router-link-exact-active{
+  color: #f2f4f5;
+  background-color: #004c99;
+  padding: 5px;
+  border-radius: 10px;
+  transition: color 0.3s ease;
 }
 
 .content {

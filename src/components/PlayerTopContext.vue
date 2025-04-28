@@ -31,7 +31,7 @@ const pStore = playerStore();
 const globalTopContext = computed(() => pStore.topContext(TopType.Global));
 const actualTopContext = computed(() => pStore.topContext(TopType.Actual));
 const topType = ref<TopType>(TopType.Global);
-const selectedTopContext = computed(() => topType.value === TopType.Actual ? actualTopContext.value : globalTopContext.value);
+const selectedTopContext = computed(() => topType.value === TopType.Actual && actualTopContext.value.length > 0 ? actualTopContext.value : globalTopContext.value);
 const selectedSource = computed(() => pStore.selectedSource)
 const selectedPlayType = computed(() => pStore.selectedPlayType)
 
@@ -39,7 +39,13 @@ function toggleTopType(): void {
   topType.value = topType.value === TopType.Actual ? TopType.Global : TopType.Actual;
 }
 
-watch([selectedSource, selectedPlayType], () => pStore.loadPlayerTopContext());
+watch([selectedSource, selectedPlayType], 
+  () => pStore.loadPlayerTopContext()
+    .then(() => {
+      topType.value = actualTopContext.value.length > 0 ? TopType.Actual : TopType.Global;
+      return undefined;
+    })
+);
 </script>
 
 <style scoped>

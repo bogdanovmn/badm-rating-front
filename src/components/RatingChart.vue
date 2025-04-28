@@ -97,6 +97,8 @@ const chartData = computed(() => {
         borderColor: playTypeColors[pStore.selectedPlayType as PlayType],
         fill: false,
         tension: 0.4,
+        pointRadius: 2,
+        pointHoverRadius: 5,
       },
     ],
   };
