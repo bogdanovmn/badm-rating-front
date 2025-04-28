@@ -10,7 +10,8 @@
         :class="{
           'row-gold': item.position === 1,
           'row-silver': item.position === 2,
-          'row-bronze': item.position === 3
+          'row-bronze': item.position === 3,
+          'row-selected': selectedPlayer?.id === item.player.id
         }"
       >
         <div class="player-info">
@@ -76,6 +77,7 @@
 import { useRouter } from 'vue-router';
 import { playerStore } from '@/stores/player';
 import { type Player, type TopPlayer, TopType } from '@/api';
+import { formatDate } from '@/common';
 
 const props = defineProps<{
   topPlayers: TopPlayer[];
@@ -91,11 +93,6 @@ const changeValueFormatted = (change: number): string => {
   if (change > 0) return `↑ ${change}`;
   if (change < 0) return `↓ ${Math.abs(change)}`;
   return '';
-};
-
-const formatDate = (date: string | undefined): string => {
-  if (!date) return '';
-  return new Date(date).toLocaleDateString('ru-RU');
 };
 
 function showPlayerPage(player: Player) {
@@ -128,6 +125,12 @@ function showPlayerPage(player: Player) {
 
 .row-bronze {
   background-color: #fffbf8;
+}
+
+.row-selected {
+  background-color: #fffdf8;
+  border: 2px solid #927a4e;
+  border-radius: 14px;
 }
 
 .player-info {

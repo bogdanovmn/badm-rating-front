@@ -6,12 +6,8 @@
       class="source-group"
       :disabled="!isSourceAvailable(source)"
       :data-source="source"
-      :style="{
-        backgroundColor: sourceAttributes[source].color.background,
-        borderColor: sourceAttributes[source].color.border
-      }"
     >
-      <legend :style="{ color: sourceAttributes[source].color.text }">
+      <legend>
         {{ sourceAttributes[source].name }}
       </legend>
       <div class="playtype-tabs">
@@ -37,7 +33,7 @@ import { sourceOrder, playTypeOrder } from '@/common';
 const props = defineProps<{
   selectedSource: Source | null;
   selectedPlayType: PlayType | null;
-  availableSources?: Map<Source, Map<PlayType, any>>; // Для проверки доступности
+  availableSources?: Map<Source, Map<PlayType, any>>;
 }>();
 
 const emit = defineEmits<{
@@ -45,29 +41,14 @@ const emit = defineEmits<{
 }>();
 
 interface SourceAttributes {
-  color: {
-    background: string;
-    border: string;
-    text: string;
-  };
   name: string;
 }
 
 const sourceAttributes: Record<Source, SourceAttributes> = {
   RNBF: {
-    color: {
-      background: '#F0F6FF',
-      border: '#D0E0FF',
-      text: '#6B7280'
-    },
     name: 'НФБР'
   },
   RNBFJunior: {
-    color: {
-      background: '#FFF7ED',
-      border: '#FFE4CC',
-      text: '#6B7280'
-    },
     name: 'НФБР Юниорский'
   }
 };
@@ -123,7 +104,7 @@ function isPlayTypeAvailable(source: Source, playType: PlayType): boolean {
   padding: 6px 12px;
   font-size: 0.9rem;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 18px;
   color: #333;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s, border-color 0.3s;
@@ -146,12 +127,54 @@ function isPlayTypeAvailable(source: Source, playType: PlayType): boolean {
   display: none;
 }
 
+.source-group[data-source="RNBFJunior"] legend {
+  background-color: #fff5f0;
+  border: 1px solid #ebc69e;
+  color: #b4834f;
+  border-radius: 10px;
+}
+
+fieldset.source-group[data-source="RNBFJunior"] {
+  background-color: #fffbf8;
+  border: 1px solid #ebc69e;
+  color: #b4834f;
+  border-radius: 10px;
+}
+
 .source-group[data-source="RNBFJunior"] .tab-button {
-  background-color: #FFF5F0;
+  background-color: #fff5f0;
+  border-color: #ebc69e;
+  color: #b4834f;
 }
 
 .source-group[data-source="RNBFJunior"] .tab-button.active {
   background-color: #FDBA74;
+  color: #805324;
+}
+
+.source-group[data-source="RNBF"] legend {
+  background-color: #f0f6ff;
+  border: 1px solid #afd4ec;
+  border-radius: 10px;
+  color: #4f77b4;
+}
+
+fieldset.source-group[data-source="RNBF"] {
+  background-color: #f6f9ff;
+  border: 1px solid #afd4ec;
+  border-radius: 10px;
+  color: #4f83b4;
+}
+
+.source-group[data-source="RNBF"] .tab-button {
+  background-color: #f0f6ff;
+  border-color: #afd4ec;
+  color: #4f83b4;
+}
+
+.source-group[data-source="RNBF"] .tab-button.active {
+  background-color: #94cbff;
+  color: #245780;
 }
 
 @media (max-width: 768px) {

@@ -1,7 +1,12 @@
 <template>
   <div class="top-players-container">
-    <h1>{{ topType === TopType.Actual ? `ТОП игроков на ${formatDate(selectedGroupData[0]?.updatedAt)}` : 'ТОП игроков за все время' }}</h1>
-    
+    <h1 v-if="topType === TopType.Actual">
+      ТОП игроков на <span class='top-date'>{{formatDate(selectedGroupData[0]?.updatedAt)}}</span>
+    </h1>
+    <h1 v-else>
+      ТОП игроков <span class="top-date">за все время</span>
+    </h1>
+
     <div class="top-type-toggle">
       <button
         class="toggle-button"
@@ -71,6 +76,11 @@ h1 {
   text-align: center;
   margin-bottom: 12px;
   font-size: 1.8rem;
+}
+
+h1 span.top-date {
+  color: #806e0a;
+  font-weight: bolder;
 }
 
 .top-type-toggle {

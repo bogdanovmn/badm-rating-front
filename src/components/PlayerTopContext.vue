@@ -1,7 +1,11 @@
 <template>
   <span v-if="selectedTopContext.length">
-    <h1>{{ topType === TopType.Actual ? `Позиция в ТОП игроков на ${formatDate(actualTopContext[0]?.updatedAt)}` : 'Позиция в ТОП игроков за все время' }}</h1>
-      
+    <h1 v-if="topType === TopType.Actual">
+      Позиция в ТОП игроков на <span class='top-date'>{{formatDate(actualTopContext[0]?.updatedAt)}}</span>
+    </h1>
+    <h1 v-else>
+      Позиция в ТОП игроков <span class="top-date">за все время</span>
+    </h1>
     <div class="top-type-toggle">
       <button v-if="actualTopContext.length" class="toggle-button" @click="toggleTopType">
         {{ topType === TopType.Actual ? 'Показать за все время' : 'Показать актуальный' }}
@@ -43,6 +47,11 @@ h1 {
   text-align: center;
   margin-bottom: 12px;
   font-size: 1.8rem;
+}
+
+h1 span.top-date {
+  color: #806e0a;
+  font-weight: bolder;
 }
 
 .top-type-toggle {
