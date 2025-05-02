@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { playerStore } from '@/stores/player';
 import { TopType, type Player, type TopPlayer } from '@/api';
 import TopPlayers from './TopPlayers.vue';
@@ -30,13 +30,13 @@ import { formatDate } from '@/common';
 const props = defineProps<{
   actualTopPlayers: TopPlayer[];
   globalTopPlayers: TopPlayer[];
-  selectedPlayer: Player | null;
+  selectedPlayer: Player;
 }>();
 
 const pStore = playerStore();
 const actualTopContextDate = computed(() => props.actualTopPlayers[0]?.updatedAt)
 
-const topType = ref<TopType>(actualTopContextDate ? TopType.Actual : TopType.Global);
+const topType = ref<TopType>(actualTopContextDate.value ? TopType.Actual : TopType.Global);
 const selectedTopContext = computed(() =>
   topType.value === TopType.Actual && actualTopContextDate.value
     ? props.actualTopPlayers

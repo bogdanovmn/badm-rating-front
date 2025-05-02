@@ -8,12 +8,15 @@
       :available-sources="ratingData"
       @update:filter="setRatingFilter"
     />
-    <div class="rating-resume">
-      <h2>Рейтинг: {{ lastRating }}</h2>
-      <template v-if="actualTopPosition">
-        <h3>{{ actualTopPosition }}-е место!</h3>
-      </template>
-      <h3>{{ globalTopPosition }}-е место за всю историю НФБР</h3>
+    <div v-if="!pStore.isLoading && player" class="rating-resume">
+      <div>Рейтинг: <span class="value">{{ lastRating }}</span></div>
+      <div v-if="actualTopContext.length">
+        <span class="value">{{ actualTopPosition?.value }}</span><span class="value-suffix">-е</span> место!
+      </div>
+      <div v-else>
+        <span class="value">{{ actualTopPosition?.value }}</span><span class="value-suffix">-е</span> место (исторически на {{ formatDate(actualTopPosition?.date) }})
+      </div>
+      <div><span class="value">{{ globalTopPosition?.value }}</span><span class="value-suffix">-е</span> место за все время</div>
     </div>
     <RatingChart v-if="player"
       :rating-data="ratingHistory"
@@ -40,7 +43,7 @@ import PlayerTopContext from '@/components/PlayerTopContext.vue';
 import { playerStore } from '@/stores/player';
 import { computed, watch } from 'vue';
 import { PlayType, Source, TopType } from '@/api';
-import { PLAY_TYPE_ORDER, SOURCE_ORDER } from '@/common';
+import { formatDate, PLAY_TYPE_ORDER, SOURCE_ORDER } from '@/common';
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
 
 const pStore = playerStore();
@@ -62,19 +65,19 @@ const ratingHistory = computed(() =>
     : []
 );
 
-const lastRating = computed(() => !pStore.isLoading && ratingHistory.value ? ratingHistory.value[ratingHistory.value.length - 1].value : 0);
+const lastRating = computed(() => !pStore.isLoading && ratingHistory.value.length ? ratingHistory.value[ratingHistory.value.length - 1].value : 0);
 
 const actualTopPositionHistory = computed(() => pStore.topPositionHistory(TopType.Actual));
 const globalTopPositionHistory = computed(() => pStore.topPositionHistory(TopType.Global));
 
 const actualTopPosition = computed(() => {
   return actualTopPositionHistory.value.length
-    ? actualTopPositionHistory.value[actualTopPositionHistory.value.length - 1].value
+    ? actualTopPositionHistory.value[actualTopPositionHistory.value.length - 1]
     : null
 });
 const globalTopPosition = computed(() => {
   return globalTopPositionHistory.value.length
-    ? globalTopPositionHistory.value[globalTopPositionHistory.value.length - 1].value
+    ? globalTopPositionHistory.value[globalTopPositionHistory.value.length - 1]
     : null
 });
 
@@ -121,11 +124,48 @@ watch([selectedSource, selectedPlayType], () => {
   width: 100%;
   padding: 0;
 }
+
 .rating-resume {
   display: flex;
-  justify-content: center;
-  gap: 15px;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
+  padding: 12px;
+  background-color: #f8fdff;
+  border-radius: 8px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.rating-resume > div {
+  font-size: 1.2rem;
+  font-weight: 100;
+  color: #969590;
+  text-align: center;
+}
+
+.rating-resume > div > span.value {
+  font-weight: bold;
+  color: #806e0a;
+  margin: 0 4px;
+}
+
+span.value-suffix {
+  font-weight: 100;
+  font-size: small;
+  color: #b3b3b3;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .rating-resume {
+    padding: 10px;
+  }
+
+  .rating-resume > div {
+    font-size: 1rem;
+  }
 }
 </style>
