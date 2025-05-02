@@ -1,7 +1,7 @@
 import { Source, PlayType, TopType } from '@/api';
 
-export const sourceOrder: Source[] = [Source.RNBFJunior, Source.RNBF];
-export const playTypeOrder: PlayType[] = [PlayType.MS, PlayType.MD, PlayType.WS, PlayType.WD, PlayType.XD];
+export const SOURCE_ORDER: Source[] = [Source.RNBFJunior, Source.RNBF];
+export const PLAY_TYPE_ORDER: PlayType[] = [PlayType.MS, PlayType.MD, PlayType.WS, PlayType.WD, PlayType.XD];
 
 export class TopKey {
     constructor(
@@ -15,7 +15,7 @@ export class TopKey {
     }
 }
 
-export const formatDate = (date: string | undefined): string => {
+export const formatDate = (date: string | undefined | null): string => {
     if (!date) return '';
     return new Date(date).toLocaleDateString('ru-RU');
 };

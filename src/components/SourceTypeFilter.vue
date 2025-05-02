@@ -1,7 +1,7 @@
 <template>
   <div class="source-groups">
     <fieldset
-      v-for="source in sourceOrder"
+      v-for="source in SOURCE_ORDER"
       :key="source"
       class="source-group"
       :disabled="!isSourceAvailable(source)"
@@ -12,7 +12,7 @@
       </legend>
       <div class="playtype-tabs">
         <button
-          v-for="type in playTypeOrder"
+          v-for="type in PLAY_TYPE_ORDER"
           :key="type"
           :class="{ 'tab-button': true, active: selectedSource === source && selectedPlayType === type }"
           @click="emit('update:filter', { source, playType: type })"
@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { Source, PlayType } from '@/api';
-import { sourceOrder, playTypeOrder } from '@/common';
+import { SOURCE_ORDER, PLAY_TYPE_ORDER } from '@/common';
 
 const props = defineProps<{
   selectedSource: Source | null;

@@ -1,12 +1,12 @@
 <template>
-  <div v-if="similar.length" class="similar-players">
+  <div v-if="players.length" class="similar-players">
     <div class="warning-title">
       <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F4A261" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v2m0 4h.01M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/></svg>
       <b>Возможное</b> дублирование профиля
     </div>
     <div class="suggestions-list">
       <div
-        v-for="sp in similar"
+        v-for="sp in players"
         :key="sp.id"
         class="player-row"
         @click="onSelect(sp)"
@@ -19,14 +19,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { playerStore } from '@/stores/player';
 import type { Player } from '@/api';
 import PlayerAttributes from './PlayerAttributes.vue';
 
-const pStore = playerStore();
+const props = defineProps<{
+  players: Player[];
+}>();
 
-const similar = computed(() => pStore.similarPlayers());
+const pStore = playerStore();
 
 async function onSelect(player: Player): Promise<void> {
   pStore.selectPlayer(player);

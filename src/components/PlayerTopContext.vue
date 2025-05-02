@@ -1,61 +1,62 @@
 <template>
   <span v-if="selectedTopContext.length">
-    <h1 v-if="topType === TopType.Actual">
-      Позиция в ТОП игроков на <span class='top-date'>{{formatDate(actualTopContext[0]?.updatedAt)}}</span>
-    </h1>
-    <h1 v-else>
+    <h2 v-if="topType === TopType.Actual">
+      Позиция в ТОП игроков на <span class='top-date'>{{formatDate(actualTopContextDate)}}</span>
+    </h2>
+    <h2 v-else>
       Позиция в ТОП игроков <span class="top-date">за все время</span>
-    </h1>
+    </h2>
     <div class="top-type-toggle">
-      <button v-if="actualTopContext.length" class="toggle-button" @click="toggleTopType">
+      <button v-if="actualTopContextDate" class="toggle-button" @click="toggleTopType">
         {{ topType === TopType.Actual ? 'Показать за все время' : 'Показать актуальный' }}
       </button>
     </div>
     <TopPlayers 
       :top-players="selectedTopContext"
       :top-type="topType" 
-      :selected-player="pStore.selectedPlayer"
+      :selected-player="selectedPlayer"
       :is-loading="pStore.isTopContextLoading"
     />
   </span>
 </template>
 
 <script setup lang="ts">
-import { watch, ref, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { playerStore } from '@/stores/player';
-import { TopType } from '@/api';
+import { TopType, type Player, type TopPlayer } from '@/api';
 import TopPlayers from './TopPlayers.vue';
 import { formatDate } from '@/common';
 
+const props = defineProps<{
+  actualTopPlayers: TopPlayer[];
+  globalTopPlayers: TopPlayer[];
+  selectedPlayer: Player | null;
+}>();
+
 const pStore = playerStore();
-const globalTopContext = computed(() => pStore.topContext(TopType.Global));
-const actualTopContext = computed(() => pStore.topContext(TopType.Actual));
-const topType = ref<TopType>(TopType.Global);
-const selectedTopContext = computed(() => topType.value === TopType.Actual && actualTopContext.value.length > 0 ? actualTopContext.value : globalTopContext.value);
-const selectedSource = computed(() => pStore.selectedSource)
-const selectedPlayType = computed(() => pStore.selectedPlayType)
+const actualTopContextDate = computed(() => props.actualTopPlayers[0]?.updatedAt)
+
+const topType = ref<TopType>(actualTopContextDate ? TopType.Actual : TopType.Global);
+const selectedTopContext = computed(() =>
+  topType.value === TopType.Actual && actualTopContextDate.value
+    ? props.actualTopPlayers
+    : props.globalTopPlayers
+);
 
 function toggleTopType(): void {
   topType.value = topType.value === TopType.Actual ? TopType.Global : TopType.Actual;
 }
 
-watch([selectedSource, selectedPlayType], 
-  () => pStore.loadPlayerTopContext()
-    .then(() => {
-      topType.value = actualTopContext.value.length > 0 ? TopType.Actual : TopType.Global;
-      return undefined;
-    })
-);
 </script>
 
 <style scoped>
-h1 {
+h2 {
   text-align: center;
   margin-bottom: 12px;
   font-size: 1.8rem;
 }
 
-h1 span.top-date {
+h2 span.top-date {
   color: #806e0a;
   font-weight: bolder;
 }

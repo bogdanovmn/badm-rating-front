@@ -6,12 +6,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { playerStore } from '@/stores/player';
 import PlayerAttributes from './PlayerAttributes.vue';
+import type { Player } from '@/api';
 
-const pStore = playerStore();
-const player = computed(() => pStore.selectedPlayer);
+const props = defineProps<{
+  player: Player | null;
+}>();
+
 </script>
 
 <style scoped>

@@ -42,9 +42,7 @@ async function onPlayerSelect(player: Player) {
 // Дебаунс-функция для поиска игроков
 const debouncedSearch = debounce(async (query: string): Promise<void> => {
   try {
-    console.log(`Поиск игроков для запроса: "${query}"`);
     const players = await searchPlayers(query);
-    console.log(`Получено ${players.length} игроков:`, players);
     suggestions.value = players;
   } catch (error: unknown) {
     suggestions.value = [];

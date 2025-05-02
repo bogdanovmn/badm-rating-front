@@ -29,14 +29,14 @@ export interface Player {
   };
 }
 
-export interface RatingHistoryPoints {
+export interface HistoryPoints {
   [date: string]: number;
 }
 
 export interface RatingHistory {
   source: Source;
   playType: PlayType;
-  data: RatingHistoryPoints;
+  data: HistoryPoints;
 }
 
 export interface TopPlayer {
@@ -67,4 +67,8 @@ export async function playersTop(topType: TopType, source: Source, playType: Pla
 
 export async function playerTopContext(playerId: string, topType: TopType, source: Source, playType: PlayType): Promise<TopPlayer[]> {
   return makeApiRequest<TopPlayer[]>('get', `/top/${topType}/context/${playerId}`, { source, playType });
+}
+
+export async function playerTopPositionHistory(playerId: string, topType: TopType, source: Source, playType: PlayType): Promise<HistoryPoints> {
+  return makeApiRequest<HistoryPoints>('get', `/top/${topType}/position-history`, { playerId, source, playType });
 }
