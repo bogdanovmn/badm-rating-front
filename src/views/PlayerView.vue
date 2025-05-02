@@ -130,7 +130,7 @@ watch([selectedSource, selectedPlayType], () => {
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  margin-bottom: 20px;
+  margin-bottom: 0px;
   padding: 12px;
   background-color: #f8fdff;
   border-radius: 8px;
