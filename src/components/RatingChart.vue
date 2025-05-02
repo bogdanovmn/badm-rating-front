@@ -1,7 +1,7 @@
 <template>
   <div class="chart-container">
     <div class="chart-wrapper">
-      <Chart
+      <VueChart
         v-if="ratingData.length"
         type="line"
         :data="chartData"
@@ -17,27 +17,65 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { type DataPoint } from '@/stores/player';
-import { Chart as ChartJS, Title, Tooltip, Legend, LineController, LineElement, CategoryScale, LinearScale, PointElement, TimeScale, TimeSeriesScale} from 'chart.js';
-import { Chart } from 'vue-chartjs';
-import 'chartjs-adapter-date-fns'
+import { 
+  Chart as ChartJS, 
+  Title, 
+  Tooltip, 
+  Legend, 
+  LineController, 
+  LineElement, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  TimeScale, 
+  TimeSeriesScale,
+  type Chart as ChartType,
+  type ChartData,
+  type ChartOptions,
+  type LegendItem,
+  type TooltipItem,
+  type ScriptableChartContext,
+  type ChartEvent,
+  type LegendElement,
+} from 'chart.js';
+import { Chart as VueChart } from 'vue-chartjs';
+import 'chartjs-adapter-date-fns';
 
-ChartJS.register(Title, Tooltip, Legend, LineController, LineElement, CategoryScale, LinearScale, PointElement, TimeScale, TimeSeriesScale);
+ChartJS.register(
+  Title, 
+  Tooltip, 
+  Legend, 
+  LineController, 
+  LineElement, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  TimeScale, 
+  TimeSeriesScale
+);
 
-const props = defineProps<{
+interface Props {
   ratingData: DataPoint[];
   globalTopPositionData: DataPoint[];
   actualTopPositionData: DataPoint[];
   isLoading: boolean;
-}>();
+}
 
-// Данные для графика позиций
-const chartData = computed(() => {
+const props = defineProps<Props>();
+
+interface ChartContext {
+  hidden?: boolean;
+  datasetIndex?: number;
+  chart?: ChartType;
+}
+
+const chartData = computed((): ChartData<'line'> => {
   return {
     datasets: [
       {
-        label: `Позиция в ТОПе`,
+        label: 'Позиция в ТОПе',
         yAxisID: "yPosition",
-        data: props.actualTopPositionData.map((point) => ({x: point.date, y: point.value})),
+        data: props.actualTopPositionData.map((point) => ({x: new Date(point.date).getTime(), y: point.value})),
         borderColor: '#806e0a',
         fill: false,
         tension: 0.4,
@@ -45,9 +83,9 @@ const chartData = computed(() => {
         pointHoverRadius: 5,
       },
       {
-        label: `Позиция в глобальном ТОПе`,
+        label: 'Позиция в глобальном ТОПе',
         yAxisID: "yPosition",
-        data: props.globalTopPositionData.map((point) => ({x: point.date, y: point.value})),
+        data: props.globalTopPositionData.map((point) => ({x: new Date(point.date).getTime(), y: point.value})),
         borderColor: '#e3d58a',
         fill: false,
         tension: 0.4,
@@ -55,9 +93,9 @@ const chartData = computed(() => {
         pointHoverRadius: 5,
       },
       {
-        label: `Рейтинг`,
+        label: 'Рейтинг',
         yAxisID: "yRating",
-        data: props.ratingData.map((point) => ({x: point.date, y: point.value})),
+        data: props.ratingData.map((point) => ({x: new Date(point.date).getTime(), y: point.value})),
         borderColor: '#8ab9e3',
         fill: false,
         tension: 0.4,
@@ -68,89 +106,88 @@ const chartData = computed(() => {
   };
 });
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    x: {
-      title: { display: false, text: 'Дата' },
-      type: 'time',
-      time: {
-        parser: 'yyyy-MM-dd',
-        tooltipFormat: 'dd.MM.yyyy',
-        displayFormats: {
-          day: 'dd.MM.yyyy'
+const chartOptions = computed((): ChartOptions<'line'> => {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          parser: 'yyyy-MM-dd',
+          tooltipFormat: 'dd.MM.yyyy',
+          displayFormats: {
+            day: 'dd.MM.yyyy'
+          },
+          unit: 'day'
         },
-        unit: 'day'
+      },
+      yPosition: {
+        position: "right",
+        display: "auto",
+        min: 1,
+        beginAtZero: false,
+        reverse: true,
+        suggestedMin: 1,
+        grid: { drawOnChartArea: false },
+      },
+      yRating: {
+        position: "left",
+        display: "auto",
+        grid: { drawOnChartArea: false },
       },
     },
-    yPosition: {
-      position: "right",
-      display: "auto",
-      min: 1,
-      beginAtZero: false,
-      title: { display: false, text: 'Позиция' },
-      reverse: true, // Инверсия: меньшие позиции выше
-      suggestedMin: 1, // Минимальная позиция
-      grid: { drawOnChartArea: false },
-    },
-    yRating: {
-      position: "left",
-      display: "auto",
-      title: { display: false, text: 'Рейтинг' },
-      grid: { drawOnChartArea: false },
-    },
-  },
-  plugins: {
-    legend: { 
-      display: true,
-      position: 'top',
-      labels: {
-        usePointStyle: true,
-        pointStyle: 'circle',
-        boxWidth: 14,
-        padding: 12,
-        font: {
-          size: 13,
-          style: (context) => context.hidden ? 'italic' : 'normal',
-          color: (context) => context.hidden ? '#aaa' : '#333'
+    plugins: {
+      legend: { 
+        display: true,
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 14,
+          padding: 12,
+          font: {
+            size: 13,
+            style: (ctx: ScriptableChartContext) => {
+              const context = ctx as unknown as ChartContext;
+              return context.hidden ? 'italic' : 'normal';
+            },
+          },
+          generateLabels: (chart: ChartType<'line'>) => {
+            return chart.data.datasets.map((dataset, i) => {
+              const meta = chart.getDatasetMeta(i);
+              const hidden = !!meta.hidden;
+              return {
+                text: dataset.label || '',
+                fillStyle: hidden ? '#ddd' : dataset.borderColor as string,
+                strokeStyle: hidden ? '#bbb' : dataset.borderColor as string,
+                lineWidth: 1,
+                pointStyle: 'circle',
+                hidden,
+                datasetIndex: i
+              } as LegendItem;
+            });
+          }
         },
-        color: '#333',
-        generateLabels: (chart: Chart) => {
-          return chart.data.datasets.map((dataset, i) => {
-            const meta = chart.getDatasetMeta(i);
-            const hidden = meta.hidden;
-            return {
-              text: dataset.label || '',
-              fillStyle: hidden ? '#ddd' : dataset.borderColor as string,
-              strokeStyle: hidden ? '#bbb' : dataset.borderColor as string,
-              lineWidth: 1,
-              pointStyle: 'circle',
-              hidden,
-              datasetIndex: i
-            };
-          });
+        onClick: (e: ChartEvent, legendItem: LegendItem, legend: LegendElement<'line'>) => {
+          const chart = legend.chart;
+          if (legendItem.datasetIndex !== undefined) {
+            const meta = chart.getDatasetMeta(legendItem.datasetIndex);
+            meta.hidden = !meta.hidden;
+            chart.update();
+          }
         }
       },
-      onClick: (e: MouseEvent, legendItem: { datasetIndex?: number }, legend: { chart: Chart }) => {
-        const chart = legend.chart;
-        if (legendItem.datasetIndex !== undefined) {
-          const meta = chart.getDatasetMeta(legendItem.datasetIndex);
-          meta.hidden = !meta.hidden;
-          chart.update();
+      tooltip: { 
+        mode: 'index', 
+        intersect: false,
+        filter: (tooltipItem: TooltipItem<'line'>) => {
+          return !tooltipItem.chart.getDatasetMeta(tooltipItem.datasetIndex).hidden;
         }
       }
     },
-    tooltip: { 
-      mode: 'index', 
-      intersect: false,
-      filter: (tooltipItem) => {
-        // Скрываем tooltip для скрытых датасетов
-        return !tooltipItem.chart.getDatasetMeta(tooltipItem.datasetIndex).hidden;
-      }
-    }
-  },
-};
+  };
+});
 </script>
 
 <style scoped>
