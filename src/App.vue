@@ -96,6 +96,7 @@ body {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  color: #8fa1ac;
 }
 
 .copyright {
