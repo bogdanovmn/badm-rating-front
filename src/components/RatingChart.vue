@@ -34,7 +34,6 @@ import {
   type ChartOptions,
   type LegendItem,
   type TooltipItem,
-  type ScriptableChartContext,
   type ChartEvent,
   type LegendElement,
 } from 'chart.js';
@@ -63,12 +62,6 @@ interface Props {
 
 const props = defineProps<Props>();
 
-interface ChartContext {
-  hidden?: boolean;
-  datasetIndex?: number;
-  chart?: ChartType;
-}
-
 const chartData = computed((): ChartData<'line'> => {
   return {
     datasets: [
@@ -91,6 +84,7 @@ const chartData = computed((): ChartData<'line'> => {
         tension: 0.4,
         pointRadius: 2,
         pointHoverRadius: 5,
+        hidden: true
       },
       {
         label: 'Рейтинг',
@@ -148,15 +142,11 @@ const chartOptions = computed((): ChartOptions<'line'> => {
           padding: 12,
           font: {
             size: 13,
-            style: (ctx: ScriptableChartContext) => {
-              const context = ctx as unknown as ChartContext;
-              return context.hidden ? 'italic' : 'normal';
-            },
           },
           generateLabels: (chart: ChartType<'line'>) => {
             return chart.data.datasets.map((dataset, i) => {
               const meta = chart.getDatasetMeta(i);
-              const hidden = !!meta.hidden;
+              const hidden = !!meta.hidden || !chart.isDatasetVisible(i);
               return {
                 text: dataset.label || '',
                 fillStyle: hidden ? '#ddd' : dataset.borderColor as string,
@@ -178,7 +168,8 @@ const chartOptions = computed((): ChartOptions<'line'> => {
           }
         }
       },
-      tooltip: { 
+      tooltip: {
+        enabled: false,
         mode: 'index', 
         intersect: false,
         filter: (tooltipItem: TooltipItem<'line'>) => {
@@ -199,22 +190,6 @@ const chartOptions = computed((): ChartOptions<'line'> => {
 
 .chart-wrapper {
   height: 400px;
-}
-
-.spinner-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-}
-
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #42A5F5;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
