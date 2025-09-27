@@ -1,16 +1,28 @@
 <template>
   <div id="app">
     <nav class="navbar">
-      <RouterLink to="/player">Игрок</RouterLink>
-      <RouterLink to="/top">ТОП</RouterLink>
-      <RouterLink to="/about">О проекте</RouterLink>
+      <div class="nav-links">
+        <RouterLink to="/player">Игрок</RouterLink>
+        <RouterLink to="/top">ТОП</RouterLink>
+        <RouterLink to="/groups">Группы</RouterLink>
+        <RouterLink to="/about">О проекте</RouterLink>
+      </div>
+      <div class="nav-auth">
+        {{ userName }}
+        <button 
+          :class="authButtonConfig.class"
+          :title="authButtonConfig.title"
+          @click="handleAuthAction"
+        >
+        </button>
+      </div>
     </nav>
     <div class="content">
       <router-view />
     </div>
     <footer class="footer">
       <div class="footer-content">
-        <p class="copyright">© {{ new Date().getFullYear() }} Mikhail N Bogdanov</p>
+        <p class="copyright">© {{ currentYear }} Mikhail N Bogdanov</p>
         <p class="contact">Обратная связь: TG @bogdanovmn</p>
       </div>
     </footer>
@@ -19,6 +31,54 @@
 
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router';
+import { tokenStorage } from "@bogdanovmn/ssofw";
+import { computed, ref, onMounted, onUnmounted } from 'vue';
+
+// Реактивное состояние
+const isAuthenticated = ref(false);
+const userName = ref<string | null>(null);
+const currentYear = ref(new Date().getFullYear());
+
+// Вычисляемые свойства
+const authButtonConfig = computed(() => ({
+  title: isAuthenticated.value ? 'Выйти' : 'Войти',
+  class: isAuthenticated.value ? 'auth-btn logout-btn' : 'auth-btn login-btn'
+}));
+
+// Методы
+function checkAuthStatus(): void {
+  isAuthenticated.value = tokenStorage.defined();
+  userName.value = tokenStorage.claims?.userName || null;
+}
+
+function handleAuthAction(): void {
+  if (isAuthenticated.value) {
+    logout();
+  } else {
+    login();
+  }
+}
+
+function login(): void {
+  window.location.href = '/brating/login';
+}
+
+function logout(): void {
+  tokenStorage.clear();
+  checkAuthStatus();
+  window.location.reload();
+}
+
+// Хуки жизненного цикла
+onMounted(() => {
+  checkAuthStatus();
+  // Проверяем статус аутентификации при изменении storage
+  window.addEventListener('storage', checkAuthStatus);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('storage', checkAuthStatus);
+});
 </script>
 
 <style scoped>
@@ -52,6 +112,13 @@ body {
 
 .navbar {
   padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-links {
+  display: flex;
 }
 
 .navbar a {
@@ -61,6 +128,40 @@ body {
   font-weight: 600;
   padding: 5px;
   transition: color 0.3s ease;
+}
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+}
+
+.auth-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  transition: background-color 0.3s ease;
+}
+
+.login-btn {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%230066cc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4'/%3E%3Cpolyline points='10,17 15,12 10,7'/%3E%3Cline x1='15' y1='12' x2='3' y2='12'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 20px;
+}
+
+.logout-btn {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23d32f2f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpolyline points='16,17 21,12 16,7'/%3E%3Cline x1='21' y1='12' x2='9' y2='12'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 20px;
+}
+
+.auth-btn:hover {
+  background-color: #f8f9fa;
 }
 
 .navbar .router-link-exact-active{
