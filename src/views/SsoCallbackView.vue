@@ -6,7 +6,7 @@
     </div>
     <div class="error" v-else-if="hasError">
       <h2>{{ statusMessage }}</h2>
-      <p>{{ error }}</p>
+      <p>Что-то пошло не так</p>
       <button @click="goHome" class="btn-primary">Вернуться на главную</button>
     </div>
     <div class="success" v-else-if="isSuccess">
@@ -17,20 +17,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import { SsoService } from "@bogdanovmn/ssofw";
+import { authStore } from '@/stores/auth';
 
-// Composables
 const router = useRouter();
-const ssoService = new SsoService(import.meta.env.VITE_SSO_SERVICE_URL);
-// Реактивное состояние
-const isLoading = ref(true);
-const error = ref<string | null>(null);
-const redirectTimer = ref<number | null>(null);
+const ssoService = inject<SsoService>("ssoService")!
+const auth = authStore();
 
-// Вычисляемые свойства
-const hasError = computed(() => error.value !== null);
+const isLoading = ref<boolean>(true);
+const hasError = ref<boolean>(false);
 const isSuccess = computed(() => !isLoading.value && !hasError.value);
 
 const statusMessage = computed(() => {
@@ -39,7 +36,6 @@ const statusMessage = computed(() => {
   return 'Успешная авторизация!';
 });
 
-// Методы
 function extractUrlParams(): { code: string | null; error: string | null } {
   const urlParams = new URLSearchParams(window.location.search);
   return {
@@ -48,59 +44,49 @@ function extractUrlParams(): { code: string | null; error: string | null } {
   };
 }
 
-function handleError(errorMessage: string): void {
-  error.value = errorMessage;
-  isLoading.value = false;
-}
-
-function handleSuccess(): void {
-  // Устанавливаем таймер для перенаправления
-  redirectTimer.value = window.setTimeout(() => {
-    router.push('/');
-  }, 1000);
-  
-  isLoading.value = false;
-}
-
 async function processCallback(): Promise<void> {
   try {
     const { code, error: errorParam } = extractUrlParams();
 
     if (errorParam) {
-      handleError(decodeURIComponent(errorParam));
+      console.error(decodeURIComponent(errorParam));
+      hasError.value = true;
       return;
     }
 
     if (!code) {
-      handleError('Код авторизации не получен от SSO сервера');
+      console.error('code is empty');
+      hasError.value = true;
       return;
     }
 
-    // Обмениваем код на JWT токен
     try {
-      await ssoService.exchangeCodeToJwt(code);
-      handleSuccess();
+      await ssoService.exchangeCodeToJwt(code)
+        .then(() => goHome())
+        .finally(() => {
+          auth.update();
+          isLoading.value = false;
+        });
     } catch (exchangeError) {
-      handleError('Ошибка при обмене кода на токен');
       console.error('Token exchange error:', exchangeError);
+      hasError.value = true;
     }
   } catch (err) {
-    handleError('Произошла ошибка при обработке авторизации');
     console.error('SSO callback error:', err);
+    hasError.value = true;
+  } finally {
+    isLoading.value = false;
   }
 }
 
 function goHome(): void {
-  if (redirectTimer.value) {
-    clearTimeout(redirectTimer.value);
-  }
-  router.push('/');
+  router.push('/player');
 }
 
-// Хуки жизненного цикла
 onMounted(() => {
   processCallback();
 });
+
 </script>
 
 <style scoped>

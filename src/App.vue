@@ -4,11 +4,11 @@
       <div class="nav-links">
         <RouterLink to="/player">Игрок</RouterLink>
         <RouterLink to="/top">ТОП</RouterLink>
-        <RouterLink to="/groups">Группы</RouterLink>
+        <RouterLink v-if="auth.isAuthenticated" to="/groups">Группы</RouterLink>
         <RouterLink to="/about">О проекте</RouterLink>
       </div>
       <div class="nav-auth">
-        {{ userName }}
+        {{ auth.userName }}
         <button 
           :class="authButtonConfig.class"
           :title="authButtonConfig.title"
@@ -30,29 +30,23 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router';
-import { tokenStorage } from "@bogdanovmn/ssofw";
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { RouterLink, RouterView, useRouter } from 'vue-router';
+import { SsoService } from "@bogdanovmn/ssofw";
+import { computed, ref, inject, onMounted } from 'vue';
+import { authStore } from '@/stores/auth';
 
-// Реактивное состояние
-const isAuthenticated = ref(false);
-const userName = ref<string | null>(null);
+const router = useRouter();
+const ssoService = inject<SsoService>("ssoService")!
+const auth = authStore();
 const currentYear = ref(new Date().getFullYear());
 
-// Вычисляемые свойства
 const authButtonConfig = computed(() => ({
-  title: isAuthenticated.value ? 'Выйти' : 'Войти',
-  class: isAuthenticated.value ? 'auth-btn logout-btn' : 'auth-btn login-btn'
+  title: auth.isAuthenticated ? 'Выйти' : 'Войти',
+  class: auth.isAuthenticated ? 'auth-btn logout-btn' : 'auth-btn login-btn'
 }));
 
-// Методы
-function checkAuthStatus(): void {
-  isAuthenticated.value = tokenStorage.defined();
-  userName.value = tokenStorage.claims?.userName || null;
-}
-
 function handleAuthAction(): void {
-  if (isAuthenticated.value) {
+  if (auth.isAuthenticated) {
     logout();
   } else {
     login();
@@ -60,29 +54,24 @@ function handleAuthAction(): void {
 }
 
 function login(): void {
-  window.location.href = '/brating/login';
+  router.push('/login');
 }
 
 function logout(): void {
-  tokenStorage.clear();
-  checkAuthStatus();
-  window.location.reload();
+  ssoService.deleteRefreshToken()
+    .finally(() => {
+      auth.update();
+      router.push('/player')
+    });
 }
 
-// Хуки жизненного цикла
 onMounted(() => {
-  checkAuthStatus();
-  // Проверяем статус аутентификации при изменении storage
-  window.addEventListener('storage', checkAuthStatus);
+  auth.update();
 });
 
-onUnmounted(() => {
-  window.removeEventListener('storage', checkAuthStatus);
-});
 </script>
 
 <style scoped>
-/* Нормализация стилей */
 *,
 *::before,
 *::after {
