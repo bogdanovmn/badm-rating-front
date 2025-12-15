@@ -209,6 +209,11 @@ h1 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.group-name:hover {
+  text-decoration: underline;
 }
 
 .group-players {
