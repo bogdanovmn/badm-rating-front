@@ -8,63 +8,75 @@
         :key="item.player.id"
         class="player-row"
         :class="{
-          'row-gold': item.position === 1,
-          'row-silver': item.position === 2,
-          'row-bronze': item.position === 3,
+          'row-gold': item.ratingSnapshot?.position === 1,
+          'row-silver': item.ratingSnapshot?.position === 2,
+          'row-bronze': item.ratingSnapshot?.position === 3,
           'row-selected': selectedPlayer?.id === item.player.id
         }"
       >
+        <div v-if="loadingByPlayer.get(item.player.id)" class="player-skeleton">
+          <div class="skeleton-position"></div>
+          <div class="skeleton-name"></div>
+          <div class="skeleton-rating"></div>
+        </div>
+        <template v-else>
         <div class="player-info">
           <span
             class="position-badge"
             :class="{
-              'position-gold': item.position === 1,
-              'position-silver': item.position === 2,
-              'position-bronze': item.position === 3
+              'position-gold': item.ratingSnapshot?.position === 1,
+              'position-silver': item.ratingSnapshot?.position === 2,
+              'position-bronze': item.ratingSnapshot?.position === 3,
+              'position-unknown': !item.ratingSnapshot
             }"
           >
-            {{ item.position }}
+            {{ item.ratingSnapshot?.position ?? '?' }}
           </span>
-          <span class="player-name" @click="showPlayerPage(item.player)">{{ item.player.details.name }}</span>
-          <span
-            v-if="item.positionChange !== 0"
+          <span class="player-name" @click="showPlayerPage(item.player)">{{ item.player.details!.name }}</span>
+          <span 
+            v-if="item.ratingSnapshot && item.ratingSnapshot.positionChange !== 0"
             class="change-badge"
             :class="{
-              'change-positive': item.positionChange > 0,
-              'change-negative': item.positionChange < 0
+              'change-positive': item.ratingSnapshot!.positionChange > 0,
+              'change-negative': item.ratingSnapshot!.positionChange < 0
             }"
           >
-            {{ changeValueFormatted(item.positionChange) }}
+            {{ changeValueFormatted(item.ratingSnapshot!.positionChange) }}
           </span>
-          <div class="rating-container">
+          <div v-if="$slots.actions" class="rating-container">
+            <slot name="actions" :player="item.player" />
+          </div>
+          <div v-else class="rating-container">
             <span
-              v-if="item.ratingChange !== 0"
+              v-if="item.ratingSnapshot && item.ratingSnapshot.ratingChange !== 0"
               class="change-badge"
               :class="{
-                'change-positive': item.ratingChange > 0,
-                'change-negative': item.ratingChange < 0
+                'change-positive': item.ratingSnapshot!.ratingChange > 0,
+                'change-negative': item.ratingSnapshot!.ratingChange < 0
               }"
             >
-              {{ changeValueFormatted(item.ratingChange) }}
+              {{ changeValueFormatted(item.ratingSnapshot!.ratingChange) }}
             </span>
             <span
+              v-if="item.ratingSnapshot"
               class="rating"
               :class="{
-                'rating-gold': item.position === 1,
-                'rating-silver': item.position === 2,
-                'rating-bronze': item.position === 3
+                'rating-gold': item.ratingSnapshot!.position === 1,
+                'rating-silver': item.ratingSnapshot!.position === 2,
+                'rating-bronze': item.ratingSnapshot!.position === 3
               }"
             >
-              {{ item.rating }}
+              {{ item.ratingSnapshot!.rating }}
             </span>
           </div>
         </div>
         <div class="player-badges">
           <PlayerAttributes :player="item.player" :no-wrapper="true" />
-          <span v-if="topType === TopType.Global" class="badge badge-secondary badge-date">
-            {{ formatDate(item.updatedAt) }}
+          <span v-if="item.ratingSnapshot && topType === TopType.Global" class="badge badge-secondary badge-date">
+            {{ formatDate(item.ratingSnapshot!.updatedAt) }}
           </span>
         </div>
+        </template>
       </div>
     </div>
 </template>
@@ -79,12 +91,14 @@ import PlayerAttributes from './PlayerAttributes.vue';
 const props = defineProps<{
   topPlayers: TopPlayer[];
   topType: TopType;
-  selectedPlayer: Player | null;
+  selectedPlayer?: Player | null;
   isLoading: boolean;
+  loadingByPlayer?: Map<string, boolean>;
 }>();
 
 const router = useRouter();
 const pStore = playerStore();
+const loadingByPlayer = props.loadingByPlayer ?? new Map();
 
 const changeValueFormatted = (change: number): string => {
   if (change > 0) return `↑ ${change}`;
@@ -108,7 +122,7 @@ function showPlayerPage(player: Player) {
 .player-row {
   display: flex;
   flex-direction: column;
-  padding: 10px;
+  padding: 10px 3px;
   border-bottom: 1px solid #eee;
 }
 
@@ -171,6 +185,12 @@ function showPlayerPage(player: Player) {
   color: #9C4B1F;
   border: none;
   font-weight: 700;
+}
+
+.position-unknown {
+  border: none;
+  background-color: #F8FAFC;
+  color: #CBD5E1;
 }
 
 .player-name {
@@ -254,6 +274,45 @@ function showPlayerPage(player: Player) {
 
 .badge-date {
   margin-left: auto;
+}
+
+.player-skeleton {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.skeleton-position {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-name {
+  width: 120px;
+  height: 20px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-rating {
+  margin-left: auto;
+  width: 60px;
+  height: 20px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
 
 @media (max-width: 768px) {

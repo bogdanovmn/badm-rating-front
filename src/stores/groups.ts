@@ -13,8 +13,7 @@ export const groupsStore = defineStore('groups', () => {
   const list = ref<Group[]>([])
   const isLoading = ref(false)
   const isCreating = ref(false)
-  const isDeleting = ref<Set<string>>(new Set()) // id удаляемых групп
-
+  const isDeleting = ref<Set<string>>(new Set())
 
   function loadGroups(): Promise<Group[]> {
     if (list.value.length > 0) {

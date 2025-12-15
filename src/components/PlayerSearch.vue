@@ -64,7 +64,7 @@ watch(searchQuery, (newQuery) => {
 .search-container {
   width: 100%;
   margin: 0;
-  padding: 20px 0;
+  padding: 20px 10px;
 }
 
 .search-input {

@@ -7,6 +7,7 @@
         :selected-source="selectedSource"
         :selected-play-type="selectedPlayType"
         :available-sources="ratingData"
+        :is-active="true"
         @update:filter="setRatingFilter"
       />
       <div v-if="!pStore.isLoading" class="rating-resume">
@@ -247,7 +248,7 @@ span.value-suffix {
 
 .player-header {
   position: relative;
-  padding: 0 20px;
+  padding: 0 10px;
   margin-bottom: 20px;
 }
 

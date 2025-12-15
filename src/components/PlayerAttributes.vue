@@ -1,4 +1,4 @@
-<template>
+<template v-if="player.details">
     <template v-if="noWrapper">
       <span v-if="player.details.year" class="badge">{{ player.details.year }}</span>
       <span v-if="player.details.region" class="badge badge-secondary">{{ player.details.region }}</span>
@@ -9,7 +9,7 @@
       <span v-if="player.details.region" class="badge badge-secondary">{{ player.details.region }}</span>
       <span v-if="player.details.rank !== 'NO_RANK'" class="badge badge-secondary">{{ player.details.rank }}</span>
     </span>
-  </template>
+</template>
 
 <script setup lang="ts">
 import type { Player } from '@/api';

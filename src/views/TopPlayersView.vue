@@ -1,7 +1,7 @@
 <template>
   <div class="top-players-container">
     <h1 v-if="topType === TopType.Actual">
-      ТОП игроков на <span class='top-date'>{{formatDate(selectedGroupData[0]?.updatedAt)}}</span>
+      ТОП игроков на <span class='top-date'>{{formatDate(selectedGroupData[0]?.ratingSnapshot?.updatedAt)}}</span>
     </h1>
     <h1 v-else>
       ТОП игроков <span class="top-date">за все время</span>
@@ -19,6 +19,7 @@
     <SourceTypeFilter
       :selected-source="selectedSource"
       :selected-play-type="selectedPlayType"
+      :is-active="true"
       @update:filter="updateFilter"
     />
 

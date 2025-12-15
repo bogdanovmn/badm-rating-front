@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import PlayerView from '../views/PlayerView.vue';
 import GroupsView from '../views/GroupsView.vue';
+import GroupView from '../views/GroupView.vue';
 import TopPlayersView from '../views/TopPlayersView.vue';
 import AboutView from '../views/AboutView.vue';
 
@@ -11,13 +12,16 @@ const routes = [
   { path: '/player', component: PlayerView },
   { path: '/top',    component: TopPlayersView },
   { path: '/groups', component: GroupsView, meta: { private: true } },
+  { path: '/groups/:groupId', component: GroupView, meta: { private: true }, props: true },
   { path: '/about',  component: AboutView },
-  { path: '/login', redirect: () => {
-    const ssoUrl = import.meta.env.VITE_SSO_FRONT_URL;
-    const redirectUri = `${window.location.origin}/brating/sso-callback`;
-    window.location.href = `${ssoUrl}/login?from=${encodeURIComponent(redirectUri)}`;
-    return '/';
-  }},
+  { path: '/login', 
+    redirect: () => {
+      const ssoUrl = import.meta.env.VITE_SSO_FRONT_URL;
+      const redirectUri = `${window.location.origin}/brating/sso-callback`;
+      window.location.href = `${ssoUrl}/login?from=${encodeURIComponent(redirectUri)}`;
+      return '/';
+    }
+  },
   { path: '/sso-callback', component: () => import('../views/SsoCallbackView.vue') },
 ];
 

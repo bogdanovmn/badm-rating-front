@@ -1,6 +1,6 @@
 <template>
   <h1 v-if="player">
-    {{ player.details.name }}
+    {{ player.details!.name }}
     <PlayerAttributes :player="player" />
   </h1>
 </template>

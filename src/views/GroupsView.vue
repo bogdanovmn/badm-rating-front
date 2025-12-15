@@ -39,7 +39,7 @@
         class="group-card"
       >
         <div class="group-details">
-          <div class="group-name">{{ group.name }}</div>
+          <div class="group-name" @click="showGroupPage(group)">{{ group.name }}</div>
           <div class="group-players">
             игроков: <strong>{{ group.playersCount }}</strong>
           </div>
@@ -65,12 +65,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router';
 import { groupsStore } from '@/stores/groups'
 import type { Group } from '@/api'
 
+const router = useRouter();
 const store = groupsStore()
 const newGroupName = ref('')
 const createError = ref('')
+
+
+function showGroupPage(group: Group) {
+  router.push("/groups/" + group.id);
+}
 
 onMounted(() => {
   store.loadGroups()

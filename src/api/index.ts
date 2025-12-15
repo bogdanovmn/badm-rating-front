@@ -20,8 +20,8 @@ export enum PlayType {
 
 export interface Player {
   id: string;
-  importId: number;
-  details: {
+  importId?: number;
+  details?: {
     name: string;
     year: number;
     region: string;
@@ -39,8 +39,7 @@ export interface RatingHistory {
   data: HistoryPoints;
 }
 
-export interface TopPlayer {
-  player: Player;
+export interface RatingSnapshot {
   position: number;
   positionChange: number;
   rating: number;
@@ -48,9 +47,43 @@ export interface TopPlayer {
   updatedAt: string;
 }
 
+export interface TopPlayer {
+  player: Player;
+  ratingSnapshot?: RatingSnapshot;
+}
+
+export interface RatingState {
+  source: Source,
+  playType: PlayType,
+  ratingSnapshot: RatingSnapshot;
+}
+
+
+function randomDelay(min: number, max: number): Promise<void> {
+    // Генерируем случайное число между min (включительно) и max (исключительно)
+    const randomSeconds = Math.random() * (max - min) + min;
+    // Переводим секунды в миллисекунды для setTimeout
+    const delayMs = randomSeconds * 1000;
+
+    console.log(`Задержка составит примерно ${delayMs.toFixed(0)} мс`);
+
+    return new Promise(resolve => {
+        setTimeout(resolve, delayMs);
+    });
+}
+
 // API-методы
 export async function searchPlayers(term: string): Promise<Player[]> {
   return makeApiRequest<Player[]>('get', '/players', { term });
+}
+
+export async function playerInfo(playerId: string): Promise<Player> {
+  return makeApiRequest<Player>('get', `/players/${playerId}`);
+}
+
+export async function playerBriefStat(playerId: string): Promise<RatingState[]> {
+  await randomDelay(1, 2)
+  return makeApiRequest<RatingState[]>('get', `/players/${playerId}/rating-state`, { topType: TopType.Actual });
 }
 
 export async function playerSimilarities(playerId: string): Promise<Player[]> {
@@ -83,6 +116,10 @@ export interface Group {
 
 export async function groups(): Promise<Group[]> {
   return authApi.get<Group[]>('/groups');
+}
+
+export async function groupById(id: string): Promise<Group> {
+  return authApi.get<Group>(`/groups/${id}`);
 }
 
 export async function groupsForPlayer(playerId: string): Promise<Group[]> {
