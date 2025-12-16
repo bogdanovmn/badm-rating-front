@@ -34,7 +34,7 @@
       />
       <div class="actions">
         <button v-if="aStore.isAuthenticated && allGroups.length > 0" @click="openGroupsOverlay" class="add-to-group-btn">
-          Добавить в группу
+          Добавить в список
         </button>
       </div>
     </div>
@@ -43,7 +43,7 @@
       <div v-if="showGroupsOverlay" class="overlay" @click.self="showGroupsOverlay = false">
         <div class="groups-modal" @click.stop>
           <div class="modal-header">
-            <h3>Добавить в группу</h3>
+            <h3>Добавить в список</h3>
             <button @click="showGroupsOverlay = false" class="close-btn">×</button>
           </div>
 
@@ -53,11 +53,11 @@
 
           <div v-else-if="allGroups.length === 0" class="modal-empty">
             <p v-if="allGroups.length === 0">
-              У вас нет групп.<br>
-              <strong>Создайте первую</strong> на странице Группы
+              У вас нет списков.<br>
+              <strong>Создайте первый</strong> на странице Мои списки
             </p>
             <p v-else>
-              Игрок уже добавлен во все ваши группы
+              Игрок уже добавлен во все ваши списки
             </p>
           </div>
 
@@ -89,7 +89,7 @@ import PlayerTopContext from '@/components/PlayerTopContext.vue';
 import { playerStore } from '@/stores/player';
 import { groupsStore } from '@/stores/groups'
 import { authStore } from '@/stores/auth'
-import { computed, watch, ref } from 'vue';
+import { computed, watch, ref, onMounted } from 'vue';
 import { addPlayerToGroup, PlayType, Source, TopType, type Group } from '@/api';
 import { formatDate, PLAY_TYPE_ORDER, SOURCE_ORDER } from '@/common';
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
@@ -128,7 +128,7 @@ const addToGroupAndClose = (groupId: string) => {
       showGroupsOverlay.value = false
     })
     .catch(() => {
-      alert('Не удалось добавить в группу')
+      alert('Не удалось добавить в список')
     })
     .finally(() => {
       addingToGroup.value.delete(groupId)
@@ -203,6 +203,11 @@ watch([selectedSource, selectedPlayType], () => {
   pStore.loadPlayerTopContext();
 }, { immediate: true });
 
+onMounted(() => {
+  if (player.value) {
+    loadGroupsForCurrentPlayer()
+  }
+})
 
 </script>
 

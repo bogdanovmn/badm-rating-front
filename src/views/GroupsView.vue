@@ -1,12 +1,12 @@
 <template>
   <div class="groups-container">
-    <h1>Мои группы</h1>
+    <h1>Мои списки</h1>
 
     <div class="add-group-section">
       <input
         v-model="newGroupName"
         @keyup.enter="createGroup"
-        placeholder="Название новой группы"
+        placeholder="Название нового списка"
         class="group-input"
         :disabled="store.isCreating || store.isLoading"
       />
@@ -15,7 +15,7 @@
         :disabled="!newGroupName.trim() || store.isCreating"
         class="add-button"
       >
-        {{ store.isCreating ? 'Создаём...' : 'Добавить группу' }}
+        {{ store.isCreating ? 'Создаём...' : 'Добавить список' }}
       </button>
     </div>
 
@@ -28,8 +28,8 @@
     </div>
 
     <div v-else-if="store.list.length === 0" class="empty-message">
-      У вас пока нет ни одной группы.<br>
-      Создайте первую — и добавляйте в неё игроков!
+      У вас пока нет ни одного списка игроков.<br>
+      Создайте первый!
     </div>
 
     <div v-else class="groups-list">
@@ -50,7 +50,7 @@
             @click="confirmDelete(group)"
             class="delete-button"
             :disabled="store.isDeleting.has(group.id)"
-            :title="store.isDeleting.has(group.id) ? 'Удаляется...' : 'Удалить группу'"
+            :title="store.isDeleting.has(group.id) ? 'Удаляется...' : 'Удалить список'"
           >
             <svg v-if="!store.isDeleting.has(group.id)" viewBox="0 0 24 24" class="close-icon">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -93,12 +93,12 @@ const createGroup = async () => {
   if (newGroup) {
     newGroupName.value = ''
   } else {
-    createError.value = 'Не удалось создать группу. Попробуйте другое название или позже.'
+    createError.value = 'Не удалось создать список. Попробуйте другое название или позже.'
   }
 }
 
 const confirmDelete = (group: Group) => {
-  if (!confirm('Удалить группу «' + group.name + '»?\nВсе игроки будут удалены из списка.')) {
+  if (!confirm('Удалить список «' + group.name + '»?')) {
     return
   }
   store.removeGroup(group.id)

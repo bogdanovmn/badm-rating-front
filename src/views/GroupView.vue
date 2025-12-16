@@ -20,7 +20,7 @@
             @click="removePlayer(player.id)"
             class="delete-button"
             :disabled="isDeleting.has(player.id)"
-            :title="isDeleting.has(player.id) ? 'Удаляется...' : 'Удалить игрока из группы'"
+            :title="isDeleting.has(player.id) ? 'Удаляется...' : 'Удалить игрока из списка'"
           >
             <svg v-if="!isDeleting.has(player.id)" viewBox="0 0 24 24" class="close-icon">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -32,7 +32,7 @@
     </TopPlayers>
 
     <div v-if="!isLoading && isPlayerLoading.size == 0" class="empty">
-        В группе пока нет игроков
+        В списке пока нет игроков
     </div>
   </div>
 </template>

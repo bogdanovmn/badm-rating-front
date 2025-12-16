@@ -1,4 +1,3 @@
-```vue
 <template>
   <div id="app">
     <nav class="navbar">
@@ -8,7 +7,7 @@
       <div class="nav-links" :class="{ 'nav-links--open': isMenuOpen }">
         <RouterLink to="/player" @click="closeMenu">Игрок</RouterLink>
         <RouterLink to="/top" @click="closeMenu">ТОП</RouterLink>
-        <RouterLink v-if="auth.isAuthenticated" to="/groups" @click="closeMenu">Группы</RouterLink>
+        <RouterLink v-if="auth.isAuthenticated" to="/groups" @click="closeMenu">Мои списки</RouterLink>
         <RouterLink to="/about" @click="closeMenu">О проекте</RouterLink>
       </div>
       <div class="nav-auth">
