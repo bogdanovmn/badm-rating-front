@@ -37,7 +37,7 @@ const props = defineProps<{
 }>();
 
 const pStore = playerStore();
-const actualTopContextDate = computed(() => props.actualTopPlayers[0]?.updatedAt)
+const actualTopContextDate = computed(() => props.actualTopPlayers[0]?.ratingSnapshot?.updatedAt)
 
 </script>
 

@@ -39,8 +39,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { groupPlayers, playerInfo, playerBriefStat, TopType, PlayType, Source, removePlayerFromGroup, groupById, Group } from '@/api'
-import type { Player, RatingSnapshot, RatingState, TopPlayer } from '@/api'
+import { groupPlayers, playerInfo, playerBriefStat, TopType, PlayType, Source, removePlayerFromGroup, groupById } from '@/api'
+import type { Player, RatingSnapshot, RatingState, TopPlayer, Group } from '@/api'
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
 import TopPlayers from '@/components/TopPlayers.vue';
 

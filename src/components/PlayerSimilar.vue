@@ -11,7 +11,7 @@
         class="player-row"
         @click="onSelect(sp)"
       >
-        <span class="player-name">{{ sp.details.name }}</span>
+        <span class="player-name">{{ sp.details!.name }}</span>
         <PlayerAttributes :player="sp" />
       </div>
     </div>

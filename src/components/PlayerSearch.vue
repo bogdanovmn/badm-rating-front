@@ -13,7 +13,7 @@
         class="player-row"
         @click="onPlayerSelect(player)"
       >
-        <span class="player-name">{{ player.details.name }}</span>
+        <span class="player-name">{{ player.details!.name }}</span>
         <PlayerAttributes :player="player" />
       </div>
     </div>
