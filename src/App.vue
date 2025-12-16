@@ -38,6 +38,7 @@ import { RouterLink, RouterView, useRouter } from 'vue-router';
 import { SsoService } from '@bogdanovmn/ssofw';
 import { computed, ref, inject, onMounted } from 'vue';
 import { authStore } from '@/stores/auth';
+import { logout } from '@/logout';
 
 const router = useRouter();
 const ssoService = inject<SsoService>('ssoService')!;
@@ -52,7 +53,8 @@ const authButtonConfig = computed(() => ({
 
 function handleAuthAction(): void {
   if (auth.isAuthenticated) {
-    logout();
+    logout(ssoService);
+    router.push('/player');
   } else {
     login();
   }
@@ -60,14 +62,6 @@ function handleAuthAction(): void {
 
 function login(): void {
   router.push('/login');
-}
-
-function logout(): void {
-  ssoService.deleteRefreshToken()
-    .finally(() => {
-      auth.update();
-      router.push('/player');
-    });
 }
 
 function toggleMenu(): void {
