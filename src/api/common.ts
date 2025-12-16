@@ -1,5 +1,7 @@
 import axios from 'axios';
 import type { AxiosResponse, AxiosError } from 'axios';
+import { AuthHttpClient, SsoService } from '@bogdanovmn/ssofw';
+import { logout } from '@/logout';
 
 
 export interface ApiError {
@@ -26,14 +28,27 @@ const api = axios.create({
   baseURL: apiUrl,
 });
 
-// Универсальная функция для выполнения API-запросов
+const ssoService = new SsoService(import.meta.env.VITE_SSO_SERVICE_URL)
+export const authApi = new AuthHttpClient(
+  apiUrl,
+  ssoService,
+  () => { logout(ssoService)}
+)
+
 export const makeApiRequest = async <T>(
   method: 'get' | 'post' | 'put' | 'delete',
   url: string,
-  params?: Record<string, unknown>
+  params: Record<string, unknown> = {}
 ): Promise<T> => {
   try {
-    const response: AxiosResponse<T> = await api({ method, url, params });
+    const response: AxiosResponse<T> = await api({
+      method,
+      url,
+      ...(method === 'get' || method === 'delete' 
+        ? { params } 
+        : { data: params }
+      )
+    });
     return response.data;
   } catch (error) {
     throw handleApiError(error);

@@ -16,7 +16,7 @@
           :key="type"
           :class="{ 'tab-button': true, active: selectedSource === source && selectedPlayType === type }"
           @click="emit('update:filter', { source, playType: type })"
-          :disabled="!isPlayTypeAvailable(source, type)"
+          :disabled="!isActive || !isPlayTypeAvailable(source, type)"
           :style="{ display: isPlayTypeAvailable(source, type) ? 'block' : 'none' }"
         >
           {{ type }}
@@ -34,6 +34,7 @@ const props = defineProps<{
   selectedSource: Source | null;
   selectedPlayType: PlayType | null;
   availableSources?: Map<Source, Map<PlayType, any>>;
+  isActive: boolean
 }>();
 
 const emit = defineEmits<{

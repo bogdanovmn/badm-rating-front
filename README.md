@@ -1,1 +1,0 @@
-# badm-rating-front

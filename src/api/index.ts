@@ -1,4 +1,4 @@
-import { makeApiRequest } from './common'
+import { makeApiRequest, authApi } from './common'
 
 export enum TopType {
   Global = 'global',
@@ -20,8 +20,8 @@ export enum PlayType {
 
 export interface Player {
   id: string;
-  importId: number;
-  details: {
+  importId?: number;
+  details?: {
     name: string;
     year: number;
     region: string;
@@ -39,8 +39,7 @@ export interface RatingHistory {
   data: HistoryPoints;
 }
 
-export interface TopPlayer {
-  player: Player;
+export interface RatingSnapshot {
   position: number;
   positionChange: number;
   rating: number;
@@ -48,9 +47,28 @@ export interface TopPlayer {
   updatedAt: string;
 }
 
+export interface TopPlayer {
+  player: Player;
+  ratingSnapshot?: RatingSnapshot;
+}
+
+export interface RatingState {
+  source: Source,
+  playType: PlayType,
+  ratingSnapshot: RatingSnapshot;
+}
+
 // API-методы
 export async function searchPlayers(term: string): Promise<Player[]> {
   return makeApiRequest<Player[]>('get', '/players', { term });
+}
+
+export async function playerInfo(playerId: string): Promise<Player> {
+  return makeApiRequest<Player>('get', `/players/${playerId}`);
+}
+
+export async function playerBriefStat(playerId: string): Promise<RatingState[]> {
+  return makeApiRequest<RatingState[]>('get', `/players/${playerId}/rating-state`, { topType: TopType.Actual });
 }
 
 export async function playerSimilarities(playerId: string): Promise<Player[]> {
@@ -71,4 +89,44 @@ export async function playerTopContext(playerId: string, topType: TopType, sourc
 
 export async function playerTopPositionHistory(playerId: string, topType: TopType, source: Source, playType: PlayType): Promise<HistoryPoints> {
   return makeApiRequest<HistoryPoints>('get', `/top/${topType}/position-history`, { playerId, source, playType });
+}
+
+// Группы
+
+export interface Group {
+  id: string;
+  name: string;
+  playersCount: number;
+}
+
+export async function groups(): Promise<Group[]> {
+  return authApi.get<Group[]>('/groups');
+}
+
+export async function groupById(id: string): Promise<Group> {
+  return authApi.get<Group>(`/groups/${id}`);
+}
+
+export async function groupsForPlayer(playerId: string): Promise<Group[]> {
+  return authApi.get<Group[]>('/groups', { playerId });
+}
+
+export async function createGroup(name: string): Promise<Group> {
+  return authApi.post<Group>('/groups', { name });
+}
+
+export async function deleteGroup(id: string): Promise<void> {
+  return authApi.delete<void>(`/groups/${id}`);
+}
+
+export async function groupPlayers(groupId: string): Promise<string[]> {
+  return authApi.get<string[]>(`/groups/${groupId}/players`);
+}
+
+export async function addPlayerToGroup(groupId: string, playerId: string): Promise<void> {
+  return authApi.post<void>(`/groups/${groupId}/players`, { playerId });
+}
+
+export async function removePlayerFromGroup(groupId: string, playerId: string): Promise<void> {
+  return authApi.delete<void>(`/groups/${groupId}/players/${playerId}`);
 }
