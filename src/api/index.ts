@@ -93,9 +93,15 @@ export async function playerTopPositionHistory(playerId: string, topType: TopTyp
 
 // Группы
 
+export enum GroupType {
+  single = 'SINGLE',
+  pair = 'PAIR'
+}
+
 export interface Group {
   id: string;
   name: string;
+  type: GroupType;
   playersCount: number;
 }
 
@@ -111,8 +117,8 @@ export async function groupsForPlayer(playerId: string): Promise<Group[]> {
   return authApi.get<Group[]>('/groups', { playerId });
 }
 
-export async function createGroup(name: string): Promise<Group> {
-  return authApi.post<Group>('/groups', { name });
+export async function createGroup(name: string, type: GroupType): Promise<Group> {
+  return authApi.post<Group>('/groups', { name, type });
 }
 
 export async function deleteGroup(id: string): Promise<void> {

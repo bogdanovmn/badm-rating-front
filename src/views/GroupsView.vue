@@ -10,6 +10,25 @@
         class="group-input"
         :disabled="store.isCreating || store.isLoading"
       />
+      <div class="group-type-toggle">
+        <button
+          type="button"
+          :class="{ active: newGroupType === GroupType.single }"
+          @click="newGroupType = GroupType.single"
+          title="Одиночный список"
+        >
+          <SingleGroupIcon :active="newGroupType === GroupType.single" />
+        </button>
+        <button
+          type="button"
+          :class="{ active: newGroupType === GroupType.pair }"
+          @click="newGroupType = GroupType.pair"
+          title="Парный список"
+        >
+          <PairGroupIcon :active="newGroupType === GroupType.pair" />
+        </button>
+      </div>
+
       <button
         @click="createGroup"
         :disabled="!newGroupName.trim() || store.isCreating"
@@ -28,7 +47,7 @@
     </div>
 
     <div v-else-if="store.list.length === 0" class="empty-message">
-      У вас пока нет ни одного списка игроков.<br>
+      У вас пока нет ни одного списка игроков.<br/>
       Создайте первый!
     </div>
 
@@ -38,8 +57,16 @@
         :key="group.id"
         class="group-card"
       >
+        <div class="group-type-icon">
+          <SingleGroupIcon v-if="group.type === GroupType.single"/>
+          <PairGroupIcon v-else/>
+        </div>
         <div class="group-details">
-          <div class="group-name" @click="showGroupPage(group)">{{ group.name }}</div>
+          <div class="group-header">
+            <div class="group-name" @click="showGroupPage(group)">
+              {{ group.name }}
+            </div>
+          </div>
           <div class="group-players">
             игроков: <strong>{{ group.playersCount }}</strong>
           </div>
@@ -65,18 +92,21 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router';
+import { useRouter } from 'vue-router'
 import { groupsStore } from '@/stores/groups'
-import type { Group } from '@/api'
+import { GroupType, type Group } from '@/api'
+import SingleGroupIcon from '@/components/icons/SingleGroupIcon.vue'
+import PairGroupIcon from '@/components/icons/PairGroupIcon.vue'
 
-const router = useRouter();
+const router = useRouter()
 const store = groupsStore()
+
 const newGroupName = ref('')
+const newGroupType = ref<GroupType>(GroupType.single)
 const createError = ref('')
 
-
 function showGroupPage(group: Group) {
-  router.push("/groups/" + group.id);
+  router.push(`/groups/${group.id}`)
 }
 
 onMounted(() => {
@@ -89,18 +119,16 @@ const createGroup = async () => {
 
   createError.value = ''
 
-  const newGroup = await store.addGroup(name)
+  const newGroup = await store.addGroup(name, newGroupType.value)
   if (newGroup) {
     newGroupName.value = ''
   } else {
-    createError.value = 'Не удалось создать список. Попробуйте другое название или позже.'
+    createError.value = 'Не удалось создать список. Попробуйте позже.'
   }
 }
 
 const confirmDelete = (group: Group) => {
-  if (!confirm('Удалить список «' + group.name + '»?')) {
-    return
-  }
+  if (!confirm(`Удалить список «${group.name}»?`)) return
   store.removeGroup(group.id)
 }
 </script>
@@ -123,9 +151,10 @@ h1 {
 .add-group-section {
   display: flex;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: stretch;
 }
 
 .group-input {
@@ -135,7 +164,6 @@ h1 {
   border-radius: 6px;
   flex: 1;
   min-width: 240px;
-  max-width: 420px;
 }
 
 .add-button {
@@ -157,15 +185,27 @@ h1 {
   cursor: not-allowed;
 }
 
-/* Ошибка под кнопкой */
-.error-message {
-  color: #d32f2f;
-  font-size: 0.9rem;
-  text-align: center;
-  margin-top: 8px;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+/* Переключатель типа */
+.group-type-toggle {
+  display: flex;
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  width: auto;
+}
+
+.group-type-toggle button {
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 52px;
+}
+
+.group-type-toggle button.active {
+  background: #ffe082;
 }
 
 .groups-list {
@@ -178,28 +218,35 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 22px;
+  padding: 15px 15px;
   background: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
   transition: all 0.25s ease;
-  gap: 16px;
-}
-
-.delete-wrapper {
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
 }
 
 .group-details {
   flex: 1;
   min-width: 0;
+}
+
+.group-header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.group-type-icon {
+  flex-shrink: 0;
+  padding-right: 15px;
+}
+
+.group-type-icon .type-icon {
+  width: 20px;
+  height: 20px;
+  fill: #777;
 }
 
 .group-name {
@@ -225,7 +272,10 @@ h1 {
   color: #806e0a;
 }
 
-/* Мусорный бак */
+.delete-wrapper {
+  flex-shrink: 0;
+}
+
 .delete-button {
   width: 40px;
   height: 40px;
@@ -269,6 +319,13 @@ h1 {
   fill: #ff5252;
 }
 
+.error-message {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 8px;
+}
+
 .spinner-small {
   width: 16px;
   height: 16px;
@@ -276,14 +333,6 @@ h1 {
   border-top: 2px solid transparent;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-}
-
-.empty-message {
-  text-align: center;
-  color: #888;
-  font-size: 1.15rem;
-  padding: 60px 20px;
-  line-height: 1.5;
 }
 
 @keyframes spin {
@@ -295,11 +344,17 @@ h1 {
     flex-direction: column;
     align-items: stretch;
   }
-  .group-input {
-    max-width: none;
+  .group-type-toggle {
+    width: 160px;
+    margin: 0 auto;
   }
-  .group-card {
-    padding: 16px 18px;
+  .group-type-toggle button {
+    width: 80px;
+    height: 40px;
+  }
+  .group-input,
+  .add-button {
+    width: 100%;
   }
 }
 </style>

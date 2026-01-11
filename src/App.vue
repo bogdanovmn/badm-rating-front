@@ -173,7 +173,7 @@ body {
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
-  padding: 20px 3px;
+  padding: 20px 10px;
 }
 
 .footer {
