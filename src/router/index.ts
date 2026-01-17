@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import PlayerView from '../views/PlayerView.vue';
 import GroupsView from '../views/GroupsView.vue';
 import GroupView from '../views/GroupView.vue';
+import GroupPairsView from '../views/GroupPairsView.vue';
 import TopPlayersView from '../views/TopPlayersView.vue';
 import AboutView from '../views/AboutView.vue';
 
@@ -13,6 +14,7 @@ const routes = [
   { path: '/top',    component: TopPlayersView },
   { path: '/groups', component: GroupsView, meta: { private: true } },
   { path: '/groups/:groupId', component: GroupView, meta: { private: true }, props: true },
+  { path: '/groups/:groupId/pairs', component: GroupPairsView, meta: { private: true }, props: true },
   { path: '/about',  component: AboutView },
   { path: '/login', 
     redirect: () => {

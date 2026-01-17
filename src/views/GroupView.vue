@@ -38,14 +38,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { groupPlayers, playerInfo, playerBriefStat, TopType, PlayType, Source, removePlayerFromGroup, groupById } from '@/api'
-import type { Player, RatingSnapshot, RatingState, TopPlayer, Group } from '@/api'
+import { ref, onMounted } from 'vue';
+import { playerStore } from '@/stores/player';
+import { groupPlayers, TopType, PlayType, Source, removePlayerFromGroup, groupById } from '@/api';
+import type { Player, RatingSnapshot, RatingState, TopPlayer, Group } from '@/api';
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
 import TopPlayers from '@/components/TopPlayers.vue';
 
 const { groupId } = defineProps<{ groupId: string }>()
 
+const pStore = playerStore()
 const group = ref<Group | null>(null)
 
 const selectedSource = ref<Source | null>(null);
@@ -98,11 +100,11 @@ onMounted(async () => {
         playersViewData.value.push(emptyPlayer)
         
         const [player, rating] = await Promise.all([
-          playerInfo(id),
-          playerBriefStat(id)
+          pStore.loadInfo(id),
+          pStore.loadRatingStat(id)
         ])
         const index = playersViewData.value.findIndex(p => p.player.id === id)
-        if (index !== -1) {
+        if (player != null && index !== -1) {
           playersData.value.set(id, new PlayerRating(player, rating))
           applyAvailableFilterValues(rating)
           playersViewData.value[index] = { player }

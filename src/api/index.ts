@@ -136,3 +136,19 @@ export async function addPlayerToGroup(groupId: string, playerId: string): Promi
 export async function removePlayerFromGroup(groupId: string, playerId: string): Promise<void> {
   return authApi.delete<void>(`/groups/${groupId}/players/${playerId}`);
 }
+
+// Pairs
+
+export type PlayerPair = [string, string];
+
+export async function groupPairs(id: string): Promise<PlayerPair[]> {
+  return authApi.get<PlayerPair[]>(`/groups/${id}/pairs`);
+}
+
+export async function addPairToGroup(groupId: string, pair: PlayerPair): Promise<void> {
+  return authApi.post<void>(`/groups/${groupId}/pairs`, { pair });
+}
+
+export async function removePairFromGroup(groupId: string, playerId: string): Promise<void> {
+  return authApi.delete<void>(`/groups/${groupId}/pairs`, { playerId });
+}
