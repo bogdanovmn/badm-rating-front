@@ -1,35 +1,33 @@
 <template>
-  <div class="top-players-container">
-    <h1 v-if="topType === TopType.Actual">
-      ТОП игроков на <span class='top-date'>{{formatDate(selectedGroupData[0]?.ratingSnapshot?.updatedAt)}}</span>
-    </h1>
-    <h1 v-else>
-      ТОП игроков <span class="top-date">за все время</span>
-    </h1>
+  <h1 v-if="topType === TopType.Actual">
+    ТОП игроков на <span class='top-date'>{{formatDate(selectedGroupData[0]?.ratingSnapshot?.updatedAt)}}</span>
+  </h1>
+  <h1 v-else>
+    ТОП игроков <span class="top-date">за все время</span>
+  </h1>
 
-    <div class="top-type-toggle">
-      <button
-        class="toggle-button"
-        @click="toggleTopType"
-      >
-        {{ topType === TopType.Actual ? 'Показать за все время' : 'Показать актуальный' }}
-      </button>
-    </div>
-
-    <SourceTypeFilter
-      :selected-source="selectedSource"
-      :selected-play-type="selectedPlayType"
-      :is-active="true"
-      @update:filter="updateFilter"
-    />
-
-    <TopPlayers 
-      :top-players="selectedGroupData"
-      :top-type="topType" 
-      :selected-player="storePlayer.selectedPlayer"
-      :is-loading="topStore.isLoading"
-    />
+  <div class="top-type-toggle">
+    <button
+      class="toggle-button"
+      @click="toggleTopType"
+    >
+      {{ topType === TopType.Actual ? 'Показать за все время' : 'Показать актуальный' }}
+    </button>
   </div>
+
+  <SourceTypeFilter
+    :selected-source="selectedSource"
+    :selected-play-type="selectedPlayType"
+    :is-active="true"
+    @update:filter="updateFilter"
+  />
+
+  <TopPlayers 
+    :top-players="selectedGroupData"
+    :top-type="topType" 
+    :selected-player="storePlayer.selectedPlayer"
+    :is-loading="topStore.isLoading"
+  />
 </template>
 
 <script setup lang="ts">
@@ -73,7 +71,7 @@ watch([topType, selectedSource, selectedPlayType], async () => {
   padding: 20px 0;
 }
 
-h1 {
+h11 {
   text-align: center;
   margin-bottom: 12px;
   font-size: 1.8rem;

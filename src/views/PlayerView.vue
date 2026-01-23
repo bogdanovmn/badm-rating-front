@@ -1,5 +1,4 @@
 <template>
-  <div class="home">
     <PlayerSearch />
     <div v-if="player" class="player-header">
       <PlayerDetails :player="player"/>
@@ -27,7 +26,7 @@
         :is-loading="pStore.isLoading"
       />
       <PlayerSimilar :players="similarPlayers"/>
-      <PlayerTopContext 
+      <PlayerTopContext
         :actual-top-players="actualTopContext" 
         :global-top-players="globalTopContext" 
         :selected-player="player"
@@ -37,6 +36,9 @@
           Добавить в список
         </button>
       </div>
+    </div>
+    <div v-else-if="playerId" class="spinner-container">
+      <div class="spinner"></div>
     </div>
 
     <teleport to="body">
@@ -76,7 +78,6 @@
         </div>
       </div>
     </teleport>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -94,14 +95,16 @@ import { addPlayerToGroup, PlayType, Source, TopType, type Group } from '@/api';
 import { formatDate, PLAY_TYPE_ORDER, SOURCE_ORDER } from '@/common';
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
 
+const { playerId } = defineProps<{ playerId?: string }>()
+
 const pStore = playerStore();
 const gStore = groupsStore();
 const aStore = authStore();
 
 const player = computed(() => pStore.selectedPlayer);
 
-const showGroupsOverlay = ref(false)
-const isLoadingGroups = ref(false)
+const showGroupsOverlay = ref<boolean>(false)
+const isLoadingGroups = ref<boolean>(false)
 const allGroups = ref<Group[]>([])
 const addingToGroup = ref<Set<string>>(new Set())
 
@@ -134,10 +137,6 @@ const addToGroupAndClose = (groupId: string) => {
       addingToGroup.value.delete(groupId)
     })
 }
-
-watch(player, () => {
-  loadGroupsForCurrentPlayer()
-})
 
 const similarPlayers = computed(() => pStore.similarPlayers());
 
@@ -203,20 +202,38 @@ watch([selectedSource, selectedPlayType], () => {
   pStore.loadPlayerTopContext();
 }, { immediate: true });
 
-onMounted(() => {
-  if (player.value) {
-    loadGroupsForCurrentPlayer()
+onMounted(loadPlayerData)
+
+watch(() => playerId, (newId) => {
+  if (newId) {
+    loadPlayerData()
   }
 })
+
+watch(() => player.value, (newPlayer) => {
+  if (newPlayer) {
+    loadPlayerData()
+  }
+})
+
+async function loadPlayerData() {
+  if (playerId) {
+    try {
+      const player = await pStore.loadInfo(playerId)
+      if (player) {
+        pStore.selectPlayer(player)
+        await loadGroupsForCurrentPlayer()
+      }
+    } finally {
+    }
+  } else if (player.value) {
+    await loadGroupsForCurrentPlayer()
+  }
+}
 
 </script>
 
 <style scoped>
-.home {
-  width: 100%;
-  padding: 0;
-}
-
 .rating-resume {
   display: flex;
   flex-direction: column;
@@ -251,12 +268,6 @@ span.value-suffix {
   margin: 0;
 }
 
-.player-header {
-  position: relative;
-  padding: 0 10px;
-  margin-bottom: 20px;
-}
-
 .add-to-group-btn {
   margin-top: 12px;
   padding: 10px 18px;
@@ -282,7 +293,6 @@ span.value-suffix {
   fill: #806e0a;
 }
 
-/* Оверлей */
 .overlay {
   position: fixed;
   inset: 0;

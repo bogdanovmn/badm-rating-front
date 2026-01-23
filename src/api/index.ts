@@ -68,7 +68,7 @@ export async function playerInfo(playerId: string): Promise<Player> {
 }
 
 export async function playerBriefStat(playerId: string): Promise<RatingState[]> {
-  return makeApiRequest<RatingState[]>('get', `/players/${playerId}/rating-state`, { topType: TopType.Actual });
+  return makeApiRequest<RatingState[]>('get', `/players/${playerId}/rating-state`, { topType: TopType.Global });
 }
 
 export async function playerSimilarities(playerId: string): Promise<Player[]> {

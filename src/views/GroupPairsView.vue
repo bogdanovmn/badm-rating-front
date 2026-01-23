@@ -5,60 +5,94 @@
       {{ group.name }}
     </h1>
 
-    <!-- Блок с существующими парами -->
-    <div v-if="pairs.length" class="pairs-section">
+    <div class="group-type-toggle">
+        <button
+          class="toggle-button"
+          type="button"
+          @click="showGroupPage(group)"
+          title="Перейти в одиночный режим"
+        >
+          Перейти в одиночный режим
+        </button>
+    </div>
+
+    <SourceTypeFilter
+      :selected-source="selectedSource"
+      :selected-play-type="selectedPlayType"
+      :available-sources="playFilterAvailableValues"
+      :is-active="isEverythingLoaded"
+      @update:filter="updateFilter"
+    />
+
+    <div v-if="isEverythingLoaded && filteredPairs.length" class="pairs-section">
       <h2>Сформированные пары</h2>
-      <div class="pairs-grid">
+      <div class="pairs-list">
         <div
-          v-for="(pair, index) in pairs"
+          v-for="(pair, index) in filteredPairs"
           :key="pair.join('-')"
           class="pair-card"
-          @click="disbandPair(pair)"
-          title="Нажмите, чтобы расформировать пару"
         >
-          {{ allPlayers.get(pair[0])?.player.details?.name }}
-          <br/> 
-          {{ allPlayers.get(pair[1])?.player.details?.name }}
-          <button class="disband-btn" @click.stop="disbandPair(pair)">
-            <svg viewBox="0 0 24 24" class="close-icon">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-            </svg>
-          </button>
+          <div class="position-badge">
+            {{ index + 1 }}
+          </div>
+          <div class="pair-players-details">
+            <div class="pair-player" @click="goToPlayer(pair[0])">
+              {{ allPlayers.get(pair[0])?.player.details?.name }}
+              <PlayerAttributes :player="allPlayers.get(pair[0])!.player" :no-wrapper="false" />
+            </div>
+            <div class="pair-player" @click="goToPlayer(pair[1])">
+              {{ allPlayers.get(pair[1])?.player.details?.name }}
+              <PlayerAttributes :player="allPlayers.get(pair[1])!.player" :no-wrapper="false" />
+            </div>
+          </div>
+          <div class="pair-summary">
+            <template v-if="selectedSource && selectedPlayType">
+              {{ allPlayers.get(pair[0])?.snapshot(selectedSource, selectedPlayType)?.rating!
+                + allPlayers.get(pair[1])?.snapshot(selectedSource, selectedPlayType)?.rating! }}
+            </template>
+            <template v-else>
+              <button class="disband-btn" @click.stop="disbandPair(pair)">
+                <svg viewBox="0 0 24 24" class="close-icon">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </button>
+            </template>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="unpaired-section">
-      <h2>
-        {{ pairs.length ? 'Оставшиеся игроки' : 'Перетащите одного игрока на другого, чтобы создать пару' }}
-      </h2>
-
-      <div v-if="unpairedPlayers.length" 
+      <div v-if="filteredUnpairedPlayers.length" 
         class="suggestions-list"
         @dragover.prevent
         @dragenter.prevent
         @drop.prevent="onDrop"
       >
+        <h2>Игроки без пары</h2>
+        <p v-if="filteredUnpairedPlayers.length > 1">
+          Перетащите одного игрока на другого, чтобы создать пару
+        </p>
         <div
-          v-for="player in unpairedPlayers"
-          :key="player!.id"
+          v-for="playerId in filteredUnpairedPlayers"
+          :key="playerId"
           class="player-draggable"
-          :class="{ 'dragging': draggingId === player!.id }"
+          :class="{ 'dragging': draggingId === playerId }"
           draggable="true"
-          :data-player-id="player!.id"
-          @dragstart="dragStart(player!.id)"
+          :data-player-id="playerId"
+          @dragstart="dragStart(playerId)"
           @dragend="draggingId = null"
-          @touchstart.prevent="touchStart(player!.id, $event)"
+          @touchstart.prevent="touchStart(playerId, $event)"
           @touchmove.prevent="touchMove($event)"
           @touchend.prevent="touchEnd"
+          @click="goToPlayer(playerId)"
         >
-          <span class="player-name">{{ player!.details!.name }}</span>
-          <PlayerAttributes :player="player!" :no-wrapper="false" />
+          <div class="player-name">{{ allPlayers.get(playerId)!.player.details!.name }}</div>
+          <PlayerAttributes :player="allPlayers.get(playerId)!.player" :no-wrapper="false" />
         </div>
       </div>
     </div>
 
-    <!-- Подсказка для мобильных -->
     <div v-if="isTouchDevice" class="mobile-hint">
       💡 Долгое нажатие на игрока → перетащите на другого
     </div>
@@ -66,21 +100,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { playerStore } from '@/stores/player';
-import PairGroupIcon from '@/components/icons/PairGroupIcon.vue'
+import { ref, onMounted, computed, watch, reactive } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { playerStore } from '@/stores/player'
 import { groupById, groupPlayers, groupPairs, addPairToGroup, removePairFromGroup } from '@/api'
-import type { Group, Player, PlayType, RatingSnapshot, RatingState, Source } from '@/api'
-import PlayerAttributes from '@/components/PlayerAttributes.vue';
+import { PlayType, type Group, type Player, type RatingSnapshot, type RatingState, type Source, type TopPlayer } from '@/api'
+import PairGroupIcon from '@/components/icons/PairGroupIcon.vue'
+import SourceTypeFilter from '@/components/SourceTypeFilter.vue'
+import PlayerAttributes from '@/components/PlayerAttributes.vue'
 
 const route = useRoute()
+const router = useRouter()
 const groupId = route.params.groupId as string
 
 const pStore = playerStore()
 const group = ref<Group | null>(null)
+const selectedSource = ref<Source | null>(null);
+const selectedPlayType = ref<PlayType | null>(null);
+const isPlayerLoading = ref<Set<string>>(new Set());
+const isEverythingLoaded = ref<boolean>(false)
+const playFilterAvailableValues = ref<Map<Source, Map<PlayType, boolean>>>(new Map())
+
 const allPlayers = ref<(Map<string, PlayerRating>)>(new Map())
 const pairs = ref<[string, string][]>([])
+const filteredPairs = ref<[string, string][]>([])
+const filteredUnpairedPlayers = ref<string[]>([])
 const draggingId = ref<string | null>(null)
 const touchTargetId = ref<string | null>(null)
 
@@ -97,18 +141,35 @@ class PlayerRating {
     snapshot(source: Source | null, playType: PlayType | null): RatingSnapshot | undefined {
         return this.rating.find(r => r.source === source && r.playType === playType)?.ratingSnapshot;
     }
+
+    withPlayType(playType: PlayType): boolean {
+      return this.rating.find(r => r.playType === playType) != undefined
+    }
 }
 
 const unpairedPlayers = computed(() => {
   const pairedIds = new Set(pairs.value.flat())
   return Array.from(allPlayers.value.entries())
     .filter(([id, data]) => !pairedIds.has(id) && data.player !== null)
-    .map(([id, data]) => data.player)
+    .map(([id, data]) => id)
 })
 
 onMounted(async () => {
   await loadEverything()
 })
+
+watch(pairs, () => {
+  updateView()
+})
+
+function showGroupPage(group: Group) {
+  router.push(`/groups/${group.id}`)
+}
+
+function goToPlayer(playerId: string) {
+  pStore.selectPlayer(allPlayers.value.get(playerId)!.player)
+  router.push(`/players/${playerId}`)
+}
 
 async function loadEverything() {
   try {
@@ -122,6 +183,7 @@ async function loadEverything() {
     pairs.value = pairData || []
 
     const playerPromises = playerIds.map(async (id) => {
+      isPlayerLoading.value.add(id)
       try {
         const [info, rating] = await Promise.all([
           pStore.loadInfo(id),
@@ -131,17 +193,78 @@ async function loadEverything() {
       } catch (error) {
         console.error(`Ошибка загрузки данных игрока ${id}:`, error)
         return { id, info: null, rating: [] }
+      } finally {
+        isPlayerLoading.value.delete(id)
       }
     })
     const results = await Promise.all(playerPromises)
     const playersMap = new Map<string, PlayerRating>()
     results.forEach(result => {
       playersMap.set(result.id, new PlayerRating(result.info!, result.rating))
+      applyAvailableFilterValues(result.rating)
     })    
     allPlayers.value = playersMap
   } catch (err) {
     console.error('Ошибка загрузки парного списка', err)
+  } finally {
+    updateView()
+    isEverythingLoaded.value = true
   }
+}
+
+function applyAvailableFilterValues(states: RatingState[]) {
+    for (const s of states) {
+        if (s.playType == PlayType.MS || s.playType == PlayType.WS) {
+          continue
+        }
+        if (!playFilterAvailableValues.value.has(s.source)) {
+            playFilterAvailableValues.value.set(s.source, new Map());
+        }
+        playFilterAvailableValues.value.get(s.source)!.set(s.playType, true);
+    }
+}
+
+function updateFilter({ source, playType }: { source: Source | null; playType: PlayType | null }): void {
+    const disableFilter = selectedSource.value === source && selectedPlayType.value == playType;
+    selectedSource.value = disableFilter ? null : source
+    selectedPlayType.value = disableFilter ? null : playType
+    updateView()
+}
+
+function updateView(): void {
+    const filteredPlayers: Set<string> = new Set()
+    const disableFilter = selectedSource.value === null || selectedPlayType.value == null;
+    allPlayers.value.forEach((data, playerId) => {
+      const st = data.snapshot(selectedSource.value, selectedPlayType.value)
+      if (disableFilter || st) {
+        filteredPlayers.add(playerId)
+      }
+    })
+    const filtredPairsUpdate = pairs.value.filter(p => {
+      if (disableFilter) {
+        return true;
+      } 
+      if (selectedPlayType.value === PlayType.XD) {
+        const p1 = allPlayers.value.get(p[0])!
+        const p2 = allPlayers.value.get(p[1])!
+        return p1.withPlayType(PlayType.MD) && p2.withPlayType(PlayType.WD)
+          || p1.withPlayType(PlayType.WD) && p2.withPlayType(PlayType.MD)
+      } else {
+        return filteredPlayers.has(p[0]) && filteredPlayers.has(p[1])
+      }
+    })
+    filtredPairsUpdate.sort((pairA, pairB) => {
+      const getPairRatingSum = (pair: [string, string]): number => {
+        return allPlayers.value.get(pair[0]) && allPlayers.value.get(pair[1])
+          ? allPlayers.value.get(pair[0])!.snapshot(selectedSource.value, selectedPlayType.value)?.rating!
+            + allPlayers.value.get(pair[1])!.snapshot(selectedSource.value, selectedPlayType.value)?.rating!
+          : 0
+      }
+      return getPairRatingSum(pairB) - getPairRatingSum(pairA)
+    })
+    
+    filteredPairs.value = filtredPairsUpdate
+    filteredUnpairedPlayers.value = unpairedPlayers.value.filter(p => filteredPlayers.has(p))
 }
 
 function dragStart(id: string) {
@@ -206,7 +329,7 @@ function touchEnd() {
 async function createPair(id1: string, id2: string) {
   const pair: [string, string] = [id1, id2]
   await addPairToGroup(groupId, pair)
-  pairs.value.push(pair)
+  pairs.value = [...pairs.value, pair]
 }
 
 async function disbandPair(pair: [string, string]) {
@@ -217,74 +340,64 @@ async function disbandPair(pair: [string, string]) {
 </script>
 
 <style scoped>
-.group-pairs-view {
-  padding: 20px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-h1 {
-  text-align: center;
-  margin-bottom: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 1.8rem;
-}
 
 .title-icon {
   width: 32px;
-  height: 32px;
-}
-
-h2 {
-  margin: 32px 0 16px;
-  color: #444;
-  font-size: 1.4rem;
+  height: 18px;
 }
 
 .pairs-section, .unpaired-section {
   margin-bottom: 40px;
 }
 
-.pairs-grid {
-  display: grid;
-  gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+.pairs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .pair-card {
-  position: relative;
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
-  border-radius: 16px;
-  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 5px;
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
+  align-content: space-between;
+  justify-content: flex-start;
   gap: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .pair-card:hover {
-  border-color: #ff6b6b;
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(255,107,107,0.15);
+  background-color: #fffbf4cc;;
 }
 
-.pair-connector {
-  font-size: 28px;
-  font-weight: bold;
-  color: #d68900;
+.pair-players-details {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.pair-player {
+  display: flex;
+  flex-direction: row;
+  align-content: space-between;
+  gap: 15px;
+  flex-wrap: nowrap;
+}
+
+.pair-summary {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-content: center;
+  margin-left: auto;
+  margin-right: 15px;
 }
 
 .disband-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   width: 32px;
   height: 32px;
   background: white;
@@ -302,12 +415,6 @@ h2 {
   fill: #ff6b6b;
 }
 
-.unpaired-grid {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-}
-
 .player-draggable {
   display: flex;
   align-items: center;
@@ -319,6 +426,10 @@ h2 {
   padding: 12px;
   margin-bottom: 8px;
   border-bottom: 1px solid #eee;
+}
+
+.player-draggable:last-child {
+  border: 0;
 }
 
 .player-draggable:active {
@@ -346,13 +457,6 @@ h2 {
   margin-top: 20px;
 }
 
-.empty-pairs {
-  text-align: center;
-  padding: 60px 20px;
-  color: #888;
-  font-size: 1.2rem;
-}
-
 .suggestions-list {
   max-width: 800px;
   margin: 20px auto;
@@ -375,7 +479,58 @@ h2 {
   color: #151e27;
 }
 
+.group-type-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.toggle-button {
+  padding: 8px 16px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  background-color: #FFE4B5;
+}
+
+.toggle-button:hover {
+  background-color: #E5E7EB;
+}
+
+.position-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: #FFFFFF;
+  border: 1px solid #69747e;
+  color: #151e27;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-left: 20px;
+}
+
 @media (max-width: 768px) {
+  .pair-card {
+    gap: 12px;
+  }
+  .pair-players-details {
+    gap: 1px;
+  }
+  .position-badge {
+    margin-left: 5px;
+  }
+  .pair-player {
+    flex-direction: column;
+    gap: 2px;
+  }
+
   .player-draggable {
     max-width: 100%;
   }
@@ -387,6 +542,21 @@ h2 {
 
   .player-name {
     font-size: 0.95rem;
+  }
+ 
+  .top-type-toggle {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toggle-button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+
+  .title-icon {
+    width: 22px;
+    height: 14px;
   }
 }
 </style>

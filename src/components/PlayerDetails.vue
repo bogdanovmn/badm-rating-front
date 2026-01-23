@@ -18,7 +18,7 @@ const props = defineProps<{
 <style scoped>
 h1 {
   text-align: center;
-  margin-bottom: 20px;
+  margin: 40px 0px;
   font-size: 1.8rem;
   display: flex;
   justify-content: center;
@@ -29,8 +29,10 @@ h1 {
 
 @media (max-width: 768px) {
   h1 {
+    font-size: 1.3rem;
     flex-direction: column;
     gap: 5px;
+    margin: 20px 0px;
   }
 }
 </style>

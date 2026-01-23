@@ -1,5 +1,4 @@
 <template>
-  <div class="groups-container">
     <h1>Мои списки</h1>
 
     <div class="add-group-section">
@@ -10,25 +9,6 @@
         class="group-input"
         :disabled="store.isCreating || store.isLoading"
       />
-      <div class="group-type-toggle">
-        <button
-          type="button"
-          :class="{ active: newGroupType === GroupType.single }"
-          @click="newGroupType = GroupType.single"
-          title="Одиночный список"
-        >
-          <SingleGroupIcon :active="newGroupType === GroupType.single" />
-        </button>
-        <button
-          type="button"
-          :class="{ active: newGroupType === GroupType.pair }"
-          @click="newGroupType = GroupType.pair"
-          title="Парный список"
-        >
-          <PairGroupIcon :active="newGroupType === GroupType.pair" />
-        </button>
-      </div>
-
       <button
         @click="createGroup"
         :disabled="!newGroupName.trim() || store.isCreating"
@@ -46,10 +26,29 @@
       <div class="spinner"></div>
     </div>
 
-    <div v-else-if="store.list.length === 0" class="empty-message">
-      У вас пока нет ни одного списка игроков.<br/>
-      Создайте первый!
-    </div>
+    <template v-else-if="store.list.length === 0">
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2h5M16 11h2m-5 0h.01m-3.01 0h.01M4 8h16" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M19 16v6m3-3h-6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        
+        <h3 class="empty-state__title">Списков пока нет</h3>
+        
+        <p class="empty-state__description">
+          Создайте свой первый список, чтобы отслеживать друзей, учеников или анализировать посев на соревнованиях.
+        </p>
+
+        <div class="empty-state__hint">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+          Добавить игрока в список можно будет в его карточке
+        </div>
+      </div>
+    </template>
 
     <div v-else class="groups-list">
       <div
@@ -57,10 +56,6 @@
         :key="group.id"
         class="group-card"
       >
-        <div class="group-type-icon">
-          <SingleGroupIcon v-if="group.type === GroupType.single"/>
-          <PairGroupIcon v-else/>
-        </div>
         <div class="group-details">
           <div class="group-header">
             <div class="group-name" @click="showGroupPage(group)">
@@ -87,7 +82,6 @@
         </div>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -95,8 +89,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { groupsStore } from '@/stores/groups'
 import { GroupType, type Group } from '@/api'
-import SingleGroupIcon from '@/components/icons/SingleGroupIcon.vue'
-import PairGroupIcon from '@/components/icons/PairGroupIcon.vue'
 
 const router = useRouter()
 const store = groupsStore()
@@ -134,19 +126,6 @@ const confirmDelete = (group: Group) => {
 </script>
 
 <style scoped>
-.groups-container {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px 0;
-}
-
-h1 {
-  text-align: center;
-  margin-bottom: 28px;
-  font-size: 1.8rem;
-  color: #333;
-}
 
 .add-group-section {
   display: flex;
@@ -185,29 +164,6 @@ h1 {
   cursor: not-allowed;
 }
 
-/* Переключатель типа */
-.group-type-toggle {
-  display: flex;
-  background: #f8f8f8;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  overflow: hidden;
-  width: auto;
-}
-
-.group-type-toggle button {
-  padding: 8px 12px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  width: 52px;
-}
-
-.group-type-toggle button.active {
-  background: #ffe082;
-}
-
 .groups-list {
   display: flex;
   flex-direction: column;
@@ -236,17 +192,6 @@ h1 {
   align-items: center;
   gap: 10px;
   margin-bottom: 4px;
-}
-
-.group-type-icon {
-  flex-shrink: 0;
-  padding-right: 15px;
-}
-
-.group-type-icon .type-icon {
-  width: 20px;
-  height: 20px;
-  fill: #777;
 }
 
 .group-name {
@@ -335,6 +280,35 @@ h1 {
   animation: spin 0.8s linear infinite;
 }
 
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background: #fdfdfd;
+  border: 2px dashed #e0e0e0;
+  border-radius: 16px;
+  margin-top: 20px;
+  transition: all 0.3s ease;
+}
+
+.empty-state__icon {
+  width: 80px;
+  height: 80px;
+  color: #ffcc80;
+  margin-bottom: 20px;
+}
+
+.empty-state__description {
+  max-width: 400px;
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -344,17 +318,39 @@ h1 {
     flex-direction: column;
     align-items: stretch;
   }
-  .group-type-toggle {
-    width: 160px;
-    margin: 0 auto;
-  }
-  .group-type-toggle button {
-    width: 80px;
-    height: 40px;
-  }
   .group-input,
   .add-button {
     width: 100%;
+  }
+
+  .empty-state {
+    padding: 30px 16px;
+    margin-top: 10px;
+    border-radius: 12px;
+  }
+
+  .empty-state__icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 16px;
+  }
+
+  .empty-state__title {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+  }
+
+  .empty-state__description {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+
+  .empty-state__hint {
+    font-size: 0.8rem;
+    padding: 10px 12px;
+    line-height: 1.3;
+    text-align: left; 
+    align-items: flex-start;
   }
 }
 </style>

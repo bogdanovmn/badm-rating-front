@@ -1,5 +1,4 @@
 <template>
-  <div class="about">
     <h1>О проекте</h1>
     <p>
       Сервис создан для любителей и профессионалов бадминтона, чтобы обеспечить удобное отслеживание рейтингов игроков Национальной федерации бадминтона России (НФБР). 
@@ -33,58 +32,23 @@
     <p>
       Обратная связь помогает сделать сервис лучше. Спасибо за поддержку!
     </p>
-  </div>
 </template>
 
 <style scoped>
-.about {
-  min-height: 600px;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-h1 {
-  font-size: 2rem;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-h2 {
-  font-size: 1.5rem;
-  margin-top: 30px;
-  margin-bottom: 15px;
-}
-
-h3 {
-  font-size: 1.3rem;
-  margin-bottom: 10px;
-}
-
-p {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  margin-bottom: 15px;
-}
-
-a {
-  color: #1e90ff;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-b {
-  font-weight: 600;
-}
 
 .warning {
   background-color: #fff3cd;
   border: 1px solid #ffeeba;
   border-radius: 5px;
   padding: 15px;
-  margin: 20px 0;
+  margin: 20px auto;
+  max-width: 60%;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .warning {
+    max-width: 95%;
+  }
 }
 </style>

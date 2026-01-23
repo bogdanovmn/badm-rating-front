@@ -11,6 +11,7 @@ import type { Role } from "@bogdanovmn/ssofw"
 
 const routes = [
   { path: '/player', component: PlayerView },
+  { path: '/players/:playerId', component: PlayerView, props: true },
   { path: '/top',    component: TopPlayersView },
   { path: '/groups', component: GroupsView, meta: { private: true } },
   { path: '/groups/:groupId', component: GroupView, meta: { private: true }, props: true },
