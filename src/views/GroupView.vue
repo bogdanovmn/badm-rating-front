@@ -23,7 +23,7 @@
           {{ isEditMode ? 'Просмотр' : 'Редактировать' }}
         </button>
     </div>
-    <SourceTypeFilter
+    <SourceTypeFilter v-if="!isEditMode"
       :selected-source="selectedSource"
       :selected-play-type="selectedPlayType"
       :available-sources="playFilterAvailableValues"

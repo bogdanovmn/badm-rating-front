@@ -24,7 +24,7 @@
         </button>
     </div>
 
-    <SourceTypeFilter
+    <SourceTypeFilter v-if="!isEditMode"
       :selected-source="selectedSource"
       :selected-play-type="selectedPlayType"
       :available-sources="playFilterAvailableValues"
@@ -69,7 +69,7 @@
         </div>
       </div>
     </div>
-    <div v-else-if="isEverythingLoaded" class="hint">
+    <div v-else-if="isEverythingLoaded && !isEditMode" class="hint">
       Нет пар удовлетворябщих выбранному фильтру
     </div>
 
@@ -451,8 +451,7 @@ async function disbandPair(pair: [string, string]) {
   transition: all 0.2s;
   overflow: hidden;
   max-width: 800px;
-  padding: 12px;
-  margin-bottom: 8px;
+  padding: 12px 3px;
   border-bottom: 1px solid #eee;
 }
 
@@ -568,6 +567,7 @@ async function disbandPair(pair: [string, string]) {
 
   .player-draggable {
     max-width: 100%;
+    padding: 8px 3px;
   }
 
   .player-row {
