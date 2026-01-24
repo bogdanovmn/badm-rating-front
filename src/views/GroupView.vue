@@ -14,6 +14,14 @@
         >
           Перейти в парный режим
         </button>
+        <button
+          class="toggle-button toggle-button-edit-mode"
+          type="button"
+          @click="toggleEditMode()"
+          :title="isEditMode ? 'Перейти в режим просмотра' : 'Перейти в режим редактирования'"
+        >
+          {{ isEditMode ? 'Просмотр' : 'Редактировать' }}
+        </button>
     </div>
     <SourceTypeFilter
       :selected-source="selectedSource"
@@ -24,7 +32,8 @@
     />
 
     <TopPlayers :top-players="playersViewData"
-                :top-type="topType" 
+                :top-type="topType"
+                :local-position="true" 
                 :is-loading="isPreLoading"
                 :loading-by-player="isPlayerLoading">
       <template v-if="!selectedSource && !selectedPlayType" #actions="{ player }">
@@ -51,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { playerStore } from '@/stores/player';
 import { groupPlayers, TopType, PlayType, Source, removePlayerFromGroup, groupById } from '@/api';
@@ -75,6 +84,7 @@ const topType = ref<TopType>(TopType.Actual);
 const playersData = ref<Map<string, PlayerRating>>(new Map());
 const playersViewData = ref<TopPlayer[]>([]);
 const playFilterAvailableValues = ref<Map<Source, Map<PlayType, boolean>>>(new Map())
+const isEditMode = ref<boolean>(true)
 
 const isDeleting: Set<String> = new Set()
 
@@ -159,21 +169,26 @@ function updateFilter({ source, playType }: { source: Source | null; playType: P
     const disableFilter = selectedSource.value === source && selectedPlayType.value == playType;
     selectedSource.value = disableFilter ? null : source
     selectedPlayType.value = disableFilter ? null : playType
-    const viewData: TopPlayer[] = []
-    playersData.value.forEach(
-        pd => {
-            const st = pd.snapshot(selectedSource.value, selectedPlayType.value)
-            if (disableFilter || st) {
-                viewData.push({ player: pd.player, ratingSnapshot: st })
-            }
-        }
-    )
-    viewData.sort((a, b) => 
-        disableFilter
-            ? a.player.details!.name > b.player.details!.name ? 1 : -1
-            : a.ratingSnapshot!.position > b.ratingSnapshot!.position ? 1 : -1
-    )
-    playersViewData.value = viewData
+    updateView()
+}
+
+function updateView() {
+  const viewData: TopPlayer[] = []
+  const disableFilter = selectedSource.value === null || selectedPlayType.value == null;
+  playersData.value.forEach(
+      pd => {
+          const st = pd.snapshot(selectedSource.value, selectedPlayType.value)
+          if (disableFilter || st) {
+              viewData.push({ player: pd.player, ratingSnapshot: st })
+          }
+      }
+  )
+  viewData.sort((a, b) => 
+      disableFilter
+          ? a.player.details!.name > b.player.details!.name ? 1 : -1
+          : a.ratingSnapshot!.position > b.ratingSnapshot!.position ? 1 : -1
+  )
+  playersViewData.value = viewData
 }
 
 function removePlayer(playerId: string) {
@@ -187,6 +202,28 @@ function removePlayer(playerId: string) {
       isDeleting.delete(playerId)
     })
 }
+
+function toggleEditMode() {
+  if (isEditMode.value) {
+    isEditMode.value = false;
+    selectedSource.value = playFilterAvailableValues.value.keys().next().value!
+    selectedPlayType.value = playFilterAvailableValues.value.get(selectedSource.value)!.keys().next().value!
+  } else {
+    selectedSource.value = null
+    selectedPlayType.value = null
+    isEditMode.value = true
+  }
+  updateView()
+}
+
+watch([selectedSource, selectedPlayType], () => {
+  if (!selectedPlayType.value) {
+    isEditMode.value = true;
+  } else {
+    isEditMode.value = false;
+  }
+}, { immediate: true });
+
 </script>
 
 <style scoped>
@@ -287,6 +324,10 @@ function removePlayer(playerId: string) {
 
 .toggle-button:hover {
   background-color: #E5E7EB;
+}
+
+.toggle-button-edit-mode {
+  min-width: 18ch;
 }
 
 @media (max-width: 768px) {

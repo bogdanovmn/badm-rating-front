@@ -14,6 +14,14 @@
         >
           Перейти в одиночный режим
         </button>
+        <button
+          class="toggle-button toggle-button-edit-mode"
+          type="button"
+          @click="toggleEditMode()"
+          :title="isEditMode ? 'Перейти в режим просмотра' : 'Перейти в режим редактирования'"
+        >
+          {{ isEditMode ? 'Просмотр' : 'Редактировать' }}
+        </button>
     </div>
 
     <SourceTypeFilter
@@ -61,6 +69,9 @@
         </div>
       </div>
     </div>
+    <div v-else-if="isEverythingLoaded" class="hint">
+      Нет пар удовлетворябщих выбранному фильтру
+    </div>
 
     <div class="unpaired-section">
       <div v-if="filteredUnpairedPlayers.length" 
@@ -70,9 +81,6 @@
         @drop.prevent="onDrop"
       >
         <h2>Игроки без пары</h2>
-        <p v-if="filteredUnpairedPlayers.length > 1">
-          Перетащите одного игрока на другого, чтобы создать пару
-        </p>
         <div
           v-for="playerId in filteredUnpairedPlayers"
           :key="playerId"
@@ -93,8 +101,8 @@
       </div>
     </div>
 
-    <div v-if="isTouchDevice" class="mobile-hint">
-      💡 Долгое нажатие на игрока → перетащите на другого
+    <div v-if="filteredUnpairedPlayers.length > 1" class="hint">
+      💡 Перетащите одного игрока на другого, чтобы создать пару
     </div>
   </div>
 </template>
@@ -120,6 +128,7 @@ const selectedPlayType = ref<PlayType | null>(null);
 const isPlayerLoading = ref<Set<string>>(new Set());
 const isEverythingLoaded = ref<boolean>(false)
 const playFilterAvailableValues = ref<Map<Source, Map<PlayType, boolean>>>(new Map())
+const isEditMode = ref<boolean>(true)
 
 const allPlayers = ref<(Map<string, PlayerRating>)>(new Map())
 const pairs = ref<[string, string][]>([])
@@ -127,8 +136,6 @@ const filteredPairs = ref<[string, string][]>([])
 const filteredUnpairedPlayers = ref<string[]>([])
 const draggingId = ref<string | null>(null)
 const touchTargetId = ref<string | null>(null)
-
-const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
 class PlayerRating {
     player: Player
@@ -170,6 +177,27 @@ function goToPlayer(playerId: string) {
   pStore.selectPlayer(allPlayers.value.get(playerId)!.player)
   router.push(`/players/${playerId}`)
 }
+
+function toggleEditMode() {
+  if (isEditMode.value) {
+    isEditMode.value = false;
+    selectedSource.value = playFilterAvailableValues.value.keys().next().value!
+    selectedPlayType.value = playFilterAvailableValues.value.get(selectedSource.value)!.keys().next().value!
+  } else {
+    selectedSource.value = null
+    selectedPlayType.value = null
+    isEditMode.value = true
+  }
+  updateView()
+}
+
+watch([selectedSource, selectedPlayType], () => {
+  if (!selectedPlayType.value) {
+    isEditMode.value = true;
+  } else {
+    isEditMode.value = false;
+  }
+}, { immediate: true });
 
 async function loadEverything() {
   try {
@@ -447,14 +475,15 @@ async function disbandPair(pair: [string, string]) {
   outline-offset: 4px;
 }
 
-.mobile-hint {
+.hint {
   text-align: center;
   padding: 16px;
   background: #fff8e1;
   border-radius: 12px;
   font-size: 0.95rem;
   color: #d68900;
-  margin-top: 20px;
+  margin: 20px auto;
+  max-width: 70%;
 }
 
 .suggestions-list {
@@ -481,6 +510,8 @@ async function disbandPair(pair: [string, string]) {
 
 .group-type-toggle {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   justify-content: center;
   gap: 10px;
   margin-bottom: 20px;
@@ -501,6 +532,10 @@ async function disbandPair(pair: [string, string]) {
   background-color: #E5E7EB;
 }
 
+.toggle-button-edit-mode {
+  min-width: 18ch;
+}
+
 .position-badge {
   display: flex;
   align-items: center;
@@ -508,8 +543,8 @@ async function disbandPair(pair: [string, string]) {
   width: 28px;
   height: 28px;
   background-color: #FFFFFF;
-  border: 1px solid #69747e;
-  color: #151e27;
+  border: 1px solid #b9bfc5;
+  color: #b9bfc5;
   border-radius: 50%;
   font-size: 0.9rem;
   font-weight: 500;
@@ -557,6 +592,13 @@ async function disbandPair(pair: [string, string]) {
   .title-icon {
     width: 22px;
     height: 14px;
+  }
+
+  .hint {
+    padding: 16px;
+    font-size: 0.7rem;
+    margin-top: 0px;
+    max-width: 95%;
   }
 }
 </style>

@@ -4,13 +4,13 @@
   </div>
   <div v-else-if="topPlayers.length" class="players-list">
       <div
-        v-for="item in topPlayers"
+        v-for="(item, index) in topPlayers"
         :key="item.player.id"
         class="player-row"
         :class="{
-          'row-gold': item.ratingSnapshot?.position === 1,
-          'row-silver': item.ratingSnapshot?.position === 2,
-          'row-bronze': item.ratingSnapshot?.position === 3,
+          'row-gold': !localPosition && item.ratingSnapshot?.position === 1,
+          'row-silver': !localPosition && item.ratingSnapshot?.position === 2,
+          'row-bronze': !localPosition && item.ratingSnapshot?.position === 3,
           'row-selected': selectedPlayer?.id === item.player.id
         }"
       >
@@ -24,13 +24,14 @@
           <span
             class="position-badge"
             :class="{
-              'position-gold': item.ratingSnapshot?.position === 1,
-              'position-silver': item.ratingSnapshot?.position === 2,
-              'position-bronze': item.ratingSnapshot?.position === 3,
+              'position-gold': !localPosition && item.ratingSnapshot?.position === 1,
+              'position-silver': !localPosition && item.ratingSnapshot?.position === 2,
+              'position-bronze': !localPosition && item.ratingSnapshot?.position === 3,
+              'position-local' : localPosition,
               'position-unknown': !item.ratingSnapshot
             }"
           >
-            {{ item.ratingSnapshot?.position ?? '?' }}
+            {{ localPosition ? index + 1 : item.ratingSnapshot?.position ?? '?' }}
           </span>
           <span class="player-name" @click="showPlayerPage(item.player)">{{ item.player.details!.name }}</span>
           <span 
@@ -93,6 +94,7 @@ const props = defineProps<{
   selectedPlayer?: Player | null;
   isLoading: boolean;
   loadingByPlayer?: Map<string, boolean>;
+  localPosition?: boolean;
 }>();
 
 const router = useRouter();
@@ -190,6 +192,13 @@ function showPlayerPage(player: Player) {
   color: #9C4B1F;
   border: none;
   font-weight: 700;
+}
+
+.position-local {
+  background-color: #FFFFFF;
+  border: 1px solid #b9bfc5;
+  color: #b9bfc5;
+  font-weight: normal;
 }
 
 .position-unknown {

@@ -25,7 +25,7 @@
     </div>
     <footer class="footer">
       <div class="footer-content">
-        <p class="copyright">© {{ currentYear }} Mikhail N Bogdanov</p>
+        <p class="copyright">© 2025-{{ currentYear }} Mikhail N Bogdanov</p>
         <p class="contact">Обратная связь: TG @bogdanovmn</p>
       </div>
     </footer>
