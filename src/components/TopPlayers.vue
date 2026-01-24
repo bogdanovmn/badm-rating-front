@@ -4,13 +4,13 @@
   </div>
   <div v-else-if="topPlayers.length" class="players-list">
       <div
-        v-for="item in topPlayers"
+        v-for="(item, index) in topPlayers"
         :key="item.player.id"
         class="player-row"
         :class="{
-          'row-gold': item.ratingSnapshot?.position === 1,
-          'row-silver': item.ratingSnapshot?.position === 2,
-          'row-bronze': item.ratingSnapshot?.position === 3,
+          'row-gold': !localPosition && item.ratingSnapshot?.position === 1,
+          'row-silver': !localPosition && item.ratingSnapshot?.position === 2,
+          'row-bronze': !localPosition && item.ratingSnapshot?.position === 3,
           'row-selected': selectedPlayer?.id === item.player.id
         }"
       >
@@ -24,13 +24,14 @@
           <span
             class="position-badge"
             :class="{
-              'position-gold': item.ratingSnapshot?.position === 1,
-              'position-silver': item.ratingSnapshot?.position === 2,
-              'position-bronze': item.ratingSnapshot?.position === 3,
+              'position-gold': !localPosition && item.ratingSnapshot?.position === 1,
+              'position-silver': !localPosition && item.ratingSnapshot?.position === 2,
+              'position-bronze': !localPosition && item.ratingSnapshot?.position === 3,
+              'position-local' : localPosition,
               'position-unknown': !item.ratingSnapshot
             }"
           >
-            {{ item.ratingSnapshot?.position ?? '?' }}
+            {{ localPosition ? index + 1 : item.ratingSnapshot?.position ?? '?' }}
           </span>
           <span class="player-name" @click="showPlayerPage(item.player)">{{ item.player.details!.name }}</span>
           <span 
@@ -83,7 +84,6 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { playerStore } from '@/stores/player';
 import { type Player, type TopPlayer, TopType } from '@/api';
 import { formatDate } from '@/common';
 import PlayerAttributes from './PlayerAttributes.vue';
@@ -94,10 +94,10 @@ const props = defineProps<{
   selectedPlayer?: Player | null;
   isLoading: boolean;
   loadingByPlayer?: Map<string, boolean>;
+  localPosition?: boolean;
 }>();
 
 const router = useRouter();
-const pStore = playerStore();
 const loadingByPlayer = props.loadingByPlayer ?? new Map();
 
 const changeValueFormatted = (change: number): string => {
@@ -107,14 +107,16 @@ const changeValueFormatted = (change: number): string => {
 };
 
 function showPlayerPage(player: Player) {
-  pStore.selectPlayer(player); 
-  router.push("/player");
+  router.push(`/players/${player.id}`);
 }
 
 </script>
 
 <style scoped>
 .players-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -124,6 +126,10 @@ function showPlayerPage(player: Player) {
   flex-direction: column;
   padding: 10px 3px;
   border-bottom: 1px solid #eee;
+}
+
+.player-row:last-child {
+  border-bottom: 0;
 }
 
 .row-gold {
@@ -140,8 +146,9 @@ function showPlayerPage(player: Player) {
 
 .row-selected {
   background-color: #fffdf8;
-  border: 2px solid #927a4e;
-  border-radius: 14px;
+  border-bottom: 2px solid #ccb68d;
+  border-radius: 4px;
+  background-color: #f7f4ed;
 }
 
 .player-info {
@@ -185,6 +192,13 @@ function showPlayerPage(player: Player) {
   color: #9C4B1F;
   border: none;
   font-weight: 700;
+}
+
+.position-local {
+  background-color: #FFFFFF;
+  border: 1px solid #b9bfc5;
+  color: #b9bfc5;
+  font-weight: normal;
 }
 
 .position-unknown {
@@ -316,26 +330,40 @@ function showPlayerPage(player: Player) {
 }
 
 @media (max-width: 768px) {
+  .players-list {
+    gap: 5px;
+  }
+
   .player-info {
     gap: 8px;
   }
 
+  .player-row {
+    padding: 0px 1px 5px 1px;
+  }
+
   .position-badge {
-    width: 24px;
-    height: 24px;
-    font-size: 0.8rem;
+    width: 20px;
+    height: 20px;
+    font-size: 0.6rem;
   }
 
   .player-name {
-    font-size: 1.1rem;
+    font-size: 1.0rem;
   }
 
   .rating {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
 
   .player-badges {
     margin-left: 32px;
+  }
+
+  .change-badge {
+    padding: 3px;
+    border-radius: 8px;
+    font-size: 0.525rem;
   }
 }
 </style>

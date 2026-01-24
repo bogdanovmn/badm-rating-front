@@ -1,5 +1,4 @@
 <template>
-  <div class="search-container">
     <input
       v-model="searchQuery"
       type="text"
@@ -17,7 +16,6 @@
         <PlayerAttributes :player="player" />
       </div>
     </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -61,12 +59,6 @@ watch(searchQuery, (newQuery) => {
 </script>
 
 <style scoped>
-.search-container {
-  width: 100%;
-  margin: 0;
-  padding: 20px 10px;
-}
-
 .search-input {
   width: 100%;
   max-width: 800px;
@@ -110,6 +102,7 @@ watch(searchQuery, (newQuery) => {
 @media (max-width: 768px) {
   .search-input {
     max-width: 100%;
+    font-size: 1.1rem;
   }
 
   .suggestions-list {

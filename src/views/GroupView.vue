@@ -1,8 +1,29 @@
 <template>
-  <div v-if="group" class="group-view">
-    <h1>{{ group.name }}</h1>
+  <div v-if="isPreLoading" class="spinner-container">
+    <div class="spinner"></div>
+  </div>
+  <span v-else>
+    <h1>{{ group!.name }}</h1>
 
-    <SourceTypeFilter
+    <div class="group-type-toggle">
+        <button
+          class="toggle-button"
+          type="button"
+          @click="showGroupPairsPage()"
+          title="Перейти в парный режим"
+        >
+          Перейти в парный режим
+        </button>
+        <button
+          class="toggle-button toggle-button-edit-mode"
+          type="button"
+          @click="toggleEditMode()"
+          :title="isEditMode ? 'Перейти в режим просмотра' : 'Перейти в режим редактирования'"
+        >
+          {{ isEditMode ? 'Просмотр' : 'Редактировать' }}
+        </button>
+    </div>
+    <SourceTypeFilter v-if="!isEditMode"
       :selected-source="selectedSource"
       :selected-play-type="selectedPlayType"
       :available-sources="playFilterAvailableValues"
@@ -11,8 +32,9 @@
     />
 
     <TopPlayers :top-players="playersViewData"
-                :top-type="topType" 
-                :is-loading="isLoading"
+                :top-type="topType"
+                :local-position="true" 
+                :is-loading="isPreLoading"
                 :loading-by-player="isPlayerLoading">
       <template v-if="!selectedSource && !selectedPlayType" #actions="{ player }">
         <div class="delete-wrapper">
@@ -31,32 +53,38 @@
       </template>
     </TopPlayers>
 
-    <div v-if="!isLoading && isPlayerLoading.size == 0" class="empty">
+    <div v-if="!isPreLoading && isPlayerLoading.size == 0" class="empty">
         В списке пока нет игроков
     </div>
-  </div>
+  </span>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { groupPlayers, playerInfo, playerBriefStat, TopType, PlayType, Source, removePlayerFromGroup, groupById } from '@/api'
-import type { Player, RatingSnapshot, RatingState, TopPlayer, Group } from '@/api'
+import { ref, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { playerStore } from '@/stores/player';
+import { groupPlayers, TopType, PlayType, Source, removePlayerFromGroup, groupById } from '@/api';
+import type { Player, RatingSnapshot, RatingState, TopPlayer, Group } from '@/api';
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
 import TopPlayers from '@/components/TopPlayers.vue';
 
 const { groupId } = defineProps<{ groupId: string }>()
 
+const router = useRouter()
+
+const pStore = playerStore()
 const group = ref<Group | null>(null)
 
 const selectedSource = ref<Source | null>(null);
 const selectedPlayType = ref<PlayType | null>(null);
-const isLoading = ref<boolean>(true);
+const isPreLoading = ref<boolean>(true);
 const isPlayerLoading = ref<Map<string, boolean>>(new Map());
 const isEverythingLoaded = ref<boolean>(false)
 const topType = ref<TopType>(TopType.Actual);
 const playersData = ref<Map<string, PlayerRating>>(new Map());
 const playersViewData = ref<TopPlayer[]>([]);
 const playFilterAvailableValues = ref<Map<Source, Map<PlayType, boolean>>>(new Map())
+const isEditMode = ref<boolean>(true)
 
 const isDeleting: Set<String> = new Set()
 
@@ -73,14 +101,17 @@ class PlayerRating {
     }
 }
 
-// Загружаем список ID → создаём заглушки → параллельно догружаем данные
+function showGroupPairsPage() {
+  router.push(`/groups/${group.value!.id}/pairs`)
+}
+
 onMounted(async () => {
   try {
     const [playerIds, groupBrief] = await Promise.all([
       groupPlayers(groupId),
       groupById(groupId)
     ])
-    isLoading.value = false
+    isPreLoading.value = false
 
     group.value = groupBrief
     if (!playerIds || playerIds.length === 0) {
@@ -98,11 +129,11 @@ onMounted(async () => {
         playersViewData.value.push(emptyPlayer)
         
         const [player, rating] = await Promise.all([
-          playerInfo(id),
-          playerBriefStat(id)
+          pStore.loadInfo(id),
+          pStore.loadRatingStat(id)
         ])
         const index = playersViewData.value.findIndex(p => p.player.id === id)
-        if (index !== -1) {
+        if (player != null && index !== -1) {
           playersData.value.set(id, new PlayerRating(player, rating))
           applyAvailableFilterValues(rating)
           playersViewData.value[index] = { player }
@@ -138,21 +169,26 @@ function updateFilter({ source, playType }: { source: Source | null; playType: P
     const disableFilter = selectedSource.value === source && selectedPlayType.value == playType;
     selectedSource.value = disableFilter ? null : source
     selectedPlayType.value = disableFilter ? null : playType
-    const viewData: TopPlayer[] = []
-    playersData.value.forEach(
-        pd => {
-            const st = pd.snapshot(selectedSource.value, selectedPlayType.value)
-            if (disableFilter || st) {
-                viewData.push({ player: pd.player, ratingSnapshot: st })
-            }
-        }
-    )
-    viewData.sort((a, b) => 
-        disableFilter
-            ? a.player.details!.name > b.player.details!.name ? 1 : -1
-            : a.ratingSnapshot!.position > b.ratingSnapshot!.position ? 1 : -1
-    )
-    playersViewData.value = viewData
+    updateView()
+}
+
+function updateView() {
+  const viewData: TopPlayer[] = []
+  const disableFilter = selectedSource.value === null || selectedPlayType.value == null;
+  playersData.value.forEach(
+      pd => {
+          const st = pd.snapshot(selectedSource.value, selectedPlayType.value)
+          if (disableFilter || st) {
+              viewData.push({ player: pd.player, ratingSnapshot: st })
+          }
+      }
+  )
+  viewData.sort((a, b) => 
+      disableFilter
+          ? a.player.details!.name > b.player.details!.name ? 1 : -1
+          : a.ratingSnapshot!.position > b.ratingSnapshot!.position ? 1 : -1
+  )
+  playersViewData.value = viewData
 }
 
 function removePlayer(playerId: string) {
@@ -166,25 +202,31 @@ function removePlayer(playerId: string) {
       isDeleting.delete(playerId)
     })
 }
+
+function toggleEditMode() {
+  if (isEditMode.value) {
+    isEditMode.value = false;
+    selectedSource.value = playFilterAvailableValues.value.keys().next().value!
+    selectedPlayType.value = playFilterAvailableValues.value.get(selectedSource.value)!.keys().next().value!
+  } else {
+    selectedSource.value = null
+    selectedPlayType.value = null
+    isEditMode.value = true
+  }
+  updateView()
+}
+
+watch([selectedSource, selectedPlayType], () => {
+  if (!selectedPlayType.value) {
+    isEditMode.value = true;
+  } else {
+    isEditMode.value = false;
+  }
+}, { immediate: true });
+
 </script>
 
 <style scoped>
-h1 {
-  text-align: center;
-  margin-bottom: 28px;
-  font-size: 1.8rem;
-  color: #333;
-}
-.group-view {
-  padding: 20px;
-}
-
-.players-list {
-  display: grid;
-  gap: 16px;
-  margin-top: 20px;
-}
-
 .player-card {
   border: 1px solid #ddd;
   border-radius: 12px;
@@ -206,70 +248,11 @@ h1 {
   gap: 16px;
 }
 
-.avatar {
-  width: 50px;
-  height: 50px;
-  background: #1976d2;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: bold;
-  border-radius: 50%;
-}
-
-.details {
-  flex: 1;
-}
-
-.name {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.birth-year {
-  color: #666;
-  margin-top: 4px;
-}
-
-.rating {
-  margin-top: 8px;
-  font-size: 16px;
-}
-
 .empty {
   text-align: center;
   padding: 40px;
   color: #999;
   font-style: italic;
-}
-
-/* Skeleton анимация */
-.skeleton {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.skeleton-avatar {
-  width: 50px;
-  height: 50px;
-  background: #e0e0e0;
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
-}
-
-.skeleton-line {
-  height: 16px;
-  background: #e0e0e0;
-  border-radius: 4px;
-  animation: pulse 1.5s infinite;
-}
-
-.skeleton-line.short {
-  width: 120px;
 }
 
 .delete-wrapper {
@@ -278,10 +261,9 @@ h1 {
   justify-content: center;
 }
 
-/* Мусорный бак */
 .delete-button {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   background: white;
   border: 2px solid #ff6b6b;
   border-radius: 50%;
@@ -322,8 +304,47 @@ h1 {
   fill: #ff5252;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+.group-type-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.toggle-button {
+  padding: 8px 16px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  background-color: #FFE4B5;
+}
+
+.toggle-button:hover {
+  background-color: #E5E7EB;
+}
+
+.toggle-button-edit-mode {
+  min-width: 18ch;
+}
+
+@media (max-width: 768px) {
+  .top-type-toggle {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toggle-button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+
+  .delete-button {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ff6b6b;
+  }
 }
 </style>

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
 import type { ApiError } from '@/api/common';
-import { playerRatingHistory, playerSimilarities, playerTopContext, playerTopPositionHistory } from '@/api';
+import { playerBriefStat, playerInfo, playerRatingHistory, playerSimilarities, playerTopContext, playerTopPositionHistory, type RatingState } from '@/api';
 import { type Player, type RatingHistory, type HistoryPoints, Source, TopType, type PlayType, type TopPlayer } from '@/api';
 import { TopKey } from '@/common';
 
@@ -23,6 +23,8 @@ export const playerStore = defineStore('player', () => {
   const isLoading = ref<boolean>(false);
   const isTopContextLoading = ref<boolean>(false);
   const isTopPositionHistoryLoading = ref<boolean>(false);
+  const playersInfo = ref<Map<string, Player>>(new Map())
+  const playerRatingStat = ref<Map<string, RatingState[]>>(new Map())
 
   function selectPlayer(player: Player) {
     selectedPlayer.value = player;
@@ -177,6 +179,36 @@ export const playerStore = defineStore('player', () => {
       });
   }
 
+  async function loadRatingStat(playerId: string): Promise<RatingState[]> {
+    const cachedData = playerRatingStat.value.get(playerId);
+    if (cachedData != null) {
+      return cachedData;
+    }
+    try {
+      const stats = await playerBriefStat(playerId);
+      playerRatingStat.value.set(playerId, stats);
+      return stats;
+    } catch (error: unknown) {
+      const emptyStats: RatingState[] = [];
+      playerRatingStat.value.set(playerId, emptyStats);
+      return emptyStats;
+    }
+  }
+
+  async function loadInfo(playerId: string): Promise<Player | null> {
+    const cachedData = playersInfo.value.get(playerId);
+    if (cachedData != null) {
+      return cachedData;
+    }
+    try {
+      const info = await playerInfo(playerId);
+      playersInfo.value.set(playerId, info);
+      return info;
+    } catch (error: unknown) {
+      return null
+    }
+  }
+
   function sortedDataPoints(points: HistoryPoints | null): DataPoint[] {
     return points === null
       ? []
@@ -199,6 +231,8 @@ export const playerStore = defineStore('player', () => {
     setSourceFilter,
     clearSourceFilter,
     selectedSource,
-    selectedPlayType
+    selectedPlayType,
+    loadInfo,
+    loadRatingStat
   };
 });

@@ -7,6 +7,7 @@ import {
   groupsForPlayer,
   addPlayerToGroup,
   type Group,
+  GroupType,
 } from '@/api'
 
 export const groupsStore = defineStore('groups', () => {
@@ -36,12 +37,12 @@ export const groupsStore = defineStore('groups', () => {
       })
   }
 
-  function addGroup(name: string): Promise<Group | null> {
+  function addGroup(name: string, type: GroupType): Promise<Group | null> {
     const trimmed = name.trim()
     if (!trimmed) return Promise.resolve(null)
 
     isCreating.value = true
-    return createGroup(trimmed)
+    return createGroup(trimmed, type)
       .then(newGroup => {
         list.value.push(newGroup)
         return newGroup

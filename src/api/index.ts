@@ -68,7 +68,7 @@ export async function playerInfo(playerId: string): Promise<Player> {
 }
 
 export async function playerBriefStat(playerId: string): Promise<RatingState[]> {
-  return makeApiRequest<RatingState[]>('get', `/players/${playerId}/rating-state`, { topType: TopType.Actual });
+  return makeApiRequest<RatingState[]>('get', `/players/${playerId}/rating-state`, { topType: TopType.Global });
 }
 
 export async function playerSimilarities(playerId: string): Promise<Player[]> {
@@ -93,9 +93,15 @@ export async function playerTopPositionHistory(playerId: string, topType: TopTyp
 
 // Группы
 
+export enum GroupType {
+  single = 'SINGLE',
+  pair = 'PAIR'
+}
+
 export interface Group {
   id: string;
   name: string;
+  type: GroupType;
   playersCount: number;
 }
 
@@ -111,8 +117,8 @@ export async function groupsForPlayer(playerId: string): Promise<Group[]> {
   return authApi.get<Group[]>('/groups', { playerId });
 }
 
-export async function createGroup(name: string): Promise<Group> {
-  return authApi.post<Group>('/groups', { name });
+export async function createGroup(name: string, type: GroupType): Promise<Group> {
+  return authApi.post<Group>('/groups', { name, type });
 }
 
 export async function deleteGroup(id: string): Promise<void> {
@@ -129,4 +135,20 @@ export async function addPlayerToGroup(groupId: string, playerId: string): Promi
 
 export async function removePlayerFromGroup(groupId: string, playerId: string): Promise<void> {
   return authApi.delete<void>(`/groups/${groupId}/players/${playerId}`);
+}
+
+// Pairs
+
+export type PlayerPair = [string, string];
+
+export async function groupPairs(id: string): Promise<PlayerPair[]> {
+  return authApi.get<PlayerPair[]>(`/groups/${id}/pairs`);
+}
+
+export async function addPairToGroup(groupId: string, pair: PlayerPair): Promise<void> {
+  return authApi.post<void>(`/groups/${groupId}/pairs`, { pair });
+}
+
+export async function removePairFromGroup(groupId: string, playerId: string): Promise<void> {
+  return authApi.delete<void>(`/groups/${groupId}/pairs`, { playerId });
 }

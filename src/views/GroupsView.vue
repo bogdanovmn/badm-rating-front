@@ -1,5 +1,4 @@
 <template>
-  <div class="groups-container">
     <h1>Мои списки</h1>
 
     <div class="add-group-section">
@@ -27,10 +26,29 @@
       <div class="spinner"></div>
     </div>
 
-    <div v-else-if="store.list.length === 0" class="empty-message">
-      У вас пока нет ни одного списка игроков.<br>
-      Создайте первый!
-    </div>
+    <template v-else-if="store.list.length === 0">
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2h5M16 11h2m-5 0h.01m-3.01 0h.01M4 8h16" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M19 16v6m3-3h-6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        
+        <h3 class="empty-state__title">Списков пока нет</h3>
+        
+        <p class="empty-state__description">
+          Создайте свой первый список, чтобы отслеживать друзей, учеников или анализировать посев на соревнованиях.
+        </p>
+
+        <div class="empty-state__hint">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+          Добавить игрока в список можно будет в его карточке
+        </div>
+      </div>
+    </template>
 
     <div v-else class="groups-list">
       <div
@@ -39,7 +57,11 @@
         class="group-card"
       >
         <div class="group-details">
-          <div class="group-name" @click="showGroupPage(group)">{{ group.name }}</div>
+          <div class="group-header">
+            <div class="group-name" @click="showGroupPage(group)">
+              {{ group.name }}
+            </div>
+          </div>
           <div class="group-players">
             игроков: <strong>{{ group.playersCount }}</strong>
           </div>
@@ -60,23 +82,23 @@
         </div>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router';
+import { useRouter } from 'vue-router'
 import { groupsStore } from '@/stores/groups'
-import type { Group } from '@/api'
+import { GroupType, type Group } from '@/api'
 
-const router = useRouter();
+const router = useRouter()
 const store = groupsStore()
+
 const newGroupName = ref('')
+const newGroupType = ref<GroupType>(GroupType.single)
 const createError = ref('')
 
-
 function showGroupPage(group: Group) {
-  router.push("/groups/" + group.id);
+  router.push(`/groups/${group.id}`)
 }
 
 onMounted(() => {
@@ -89,43 +111,29 @@ const createGroup = async () => {
 
   createError.value = ''
 
-  const newGroup = await store.addGroup(name)
+  const newGroup = await store.addGroup(name, newGroupType.value)
   if (newGroup) {
     newGroupName.value = ''
   } else {
-    createError.value = 'Не удалось создать список. Попробуйте другое название или позже.'
+    createError.value = 'Не удалось создать список. Попробуйте позже.'
   }
 }
 
 const confirmDelete = (group: Group) => {
-  if (!confirm('Удалить список «' + group.name + '»?')) {
-    return
-  }
+  if (!confirm(`Удалить список «${group.name}»?`)) return
   store.removeGroup(group.id)
 }
 </script>
 
 <style scoped>
-.groups-container {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px 0;
-}
-
-h1 {
-  text-align: center;
-  margin-bottom: 28px;
-  font-size: 1.8rem;
-  color: #333;
-}
 
 .add-group-section {
   display: flex;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: stretch;
 }
 
 .group-input {
@@ -135,7 +143,6 @@ h1 {
   border-radius: 6px;
   flex: 1;
   min-width: 240px;
-  max-width: 420px;
 }
 
 .add-button {
@@ -157,17 +164,6 @@ h1 {
   cursor: not-allowed;
 }
 
-/* Ошибка под кнопкой */
-.error-message {
-  color: #d32f2f;
-  font-size: 0.9rem;
-  text-align: center;
-  margin-top: 8px;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
 .groups-list {
   display: flex;
   flex-direction: column;
@@ -178,28 +174,24 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 22px;
+  padding: 15px 15px;
   background: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
   transition: all 0.25s ease;
-  gap: 16px;
-}
-
-.delete-wrapper {
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
 }
 
 .group-details {
   flex: 1;
   min-width: 0;
+}
+
+.group-header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
 .group-name {
@@ -225,7 +217,10 @@ h1 {
   color: #806e0a;
 }
 
-/* Мусорный бак */
+.delete-wrapper {
+  flex-shrink: 0;
+}
+
 .delete-button {
   width: 40px;
   height: 40px;
@@ -269,6 +264,13 @@ h1 {
   fill: #ff5252;
 }
 
+.error-message {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 8px;
+}
+
 .spinner-small {
   width: 16px;
   height: 16px;
@@ -278,12 +280,33 @@ h1 {
   animation: spin 0.8s linear infinite;
 }
 
-.empty-message {
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
   text-align: center;
-  color: #888;
-  font-size: 1.15rem;
-  padding: 60px 20px;
+  background: #fdfdfd;
+  border: 2px dashed #e0e0e0;
+  border-radius: 16px;
+  margin-top: 20px;
+  transition: all 0.3s ease;
+}
+
+.empty-state__icon {
+  width: 80px;
+  height: 80px;
+  color: #ffcc80;
+  margin-bottom: 20px;
+}
+
+.empty-state__description {
+  max-width: 400px;
+  font-size: 1rem;
+  color: #666;
   line-height: 1.5;
+  margin: 0 0 24px 0;
 }
 
 @keyframes spin {
@@ -295,11 +318,39 @@ h1 {
     flex-direction: column;
     align-items: stretch;
   }
-  .group-input {
-    max-width: none;
+  .group-input,
+  .add-button {
+    width: 100%;
   }
-  .group-card {
-    padding: 16px 18px;
+
+  .empty-state {
+    padding: 30px 16px;
+    margin-top: 10px;
+    border-radius: 12px;
+  }
+
+  .empty-state__icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 16px;
+  }
+
+  .empty-state__title {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+  }
+
+  .empty-state__description {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+
+  .empty-state__hint {
+    font-size: 0.8rem;
+    padding: 10px 12px;
+    line-height: 1.3;
+    text-align: left; 
+    align-items: flex-start;
   }
 }
 </style>

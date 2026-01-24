@@ -25,7 +25,7 @@
     </div>
     <footer class="footer">
       <div class="footer-content">
-        <p class="copyright">© {{ currentYear }} Mikhail N Bogdanov</p>
+        <p class="copyright">© 2025-{{ currentYear }} Mikhail N Bogdanov</p>
         <p class="contact">Обратная связь: TG @bogdanovmn</p>
       </div>
     </footer>
@@ -78,24 +78,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html,
-body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-}
 
 #app {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #151e27;
@@ -170,15 +154,16 @@ body {
 
 .content {
   flex: 1 0 auto;
-  max-width: 1280px;
+  max-width: 900px;
   width: 100%;
   margin: 0 auto;
-  padding: 20px 3px;
+  padding: 20px 10px;
 }
 
 .footer {
   flex-shrink: 0;
   padding: 10px 0;
+  margin-top: 10px;
   background-color: #f5f5f5;
   border-top: 1px solid #e5e5e5;
   width: 100%;
@@ -233,6 +218,10 @@ body {
 @media (max-width: 768px) {
   .menu-toggle {
     display: block;
+  }
+
+  .content {
+    padding: 0px 10px;
   }
 
   .nav-links {
