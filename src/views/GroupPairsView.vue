@@ -76,28 +76,24 @@
     <div class="unpaired-section">
       <div v-if="filteredUnpairedPlayers.length" 
         class="suggestions-list"
-        @dragover.prevent
-        @dragenter.prevent
-        @drop.prevent="onDrop"
       >
         <h2>Игроки без пары</h2>
-        <div
-          v-for="playerId in filteredUnpairedPlayers"
-          :key="playerId"
-          class="player-draggable"
-          :class="{ 'dragging': draggingId === playerId }"
-          draggable="true"
-          :data-player-id="playerId"
-          @dragstart="dragStart(playerId)"
-          @dragend="draggingId = null"
-          @touchstart.prevent="touchStart(playerId, $event)"
-          @touchmove.prevent="touchMove($event)"
-          @touchend.prevent="touchEnd"
-          @click="goToPlayer(playerId)"
+        <DragAndDropList
+          :items="filteredUnpairedPlayers"
+          :item-id-getter="(id) => id"
+          :item-key-getter="(id) => id"
+          @item-drop="createPair"
+          @item-click="goToPlayer"
+          :show-drop-indicators="true"
+          :allow-replace="true"
         >
-          <div class="player-name">{{ allPlayers.get(playerId)!.player.details!.name }}</div>
-          <PlayerAttributes :player="allPlayers.get(playerId)!.player" :no-wrapper="false" />
-        </div>
+          <template #default="{ item: playerId, isDragging }">
+            <div class="player-content" :class="{ 'dragging': isDragging }">
+              <div class="player-name">{{ allPlayers.get(playerId)!.player.details!.name }}</div>
+              <PlayerAttributes :player="allPlayers.get(playerId)!.player" :no-wrapper="false" />
+            </div>
+          </template>
+        </DragAndDropList>
       </div>
     </div>
 
@@ -116,6 +112,7 @@ import { PlayType, type Group, type Player, type RatingSnapshot, type RatingStat
 import PairGroupIcon from '@/components/icons/PairGroupIcon.vue'
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue'
 import PlayerAttributes from '@/components/PlayerAttributes.vue'
+import DragAndDropList from '@/components/DragAndDropList.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -295,65 +292,6 @@ function updateView(): void {
     filteredUnpairedPlayers.value = unpairedPlayers.value.filter(p => filteredPlayers.has(p))
 }
 
-function dragStart(id: string) {
-  draggingId.value = id
-}
-
-function onDrop(e: DragEvent) {
-  if (!draggingId.value) return
-
-  const targetElement = e.target as HTMLElement
-  const targetCard = targetElement.closest('.player-draggable')
-  if (!targetCard) return
-
-  const targetId = targetCard.getAttribute('data-player-id')
-    || Array.from(targetCard.querySelectorAll('[data-player-id]'))
-        .find(el => el.getAttribute('data-player-id'))?.getAttribute('data-player-id')
-
-  if (targetId && targetId !== draggingId.value) {
-    createPair(draggingId.value, targetId)
-  }
-}
-
-function touchStart(id: string, e: TouchEvent) {
-  touchTargetId.value = id
-  draggingId.value = id
-}
-
-function touchMove(e: TouchEvent) {
-  if (!touchTargetId.value) return
-
-  const touch = e.touches[0]
-  const element = document.elementFromPoint(touch.clientX, touch.clientY)
-  const targetCard = element?.closest('.player-draggable')
-
-  document.querySelectorAll('.player-draggable').forEach(el => {
-    el.classList.remove('drag-over')
-  })
-  if (targetCard) {
-    targetCard.classList.add('drag-over')
-  }
-}
-
-function touchEnd() {
-  if (!touchTargetId.value) return
-
-  const overElement = document.querySelector('.player-draggable.drag-over')
-  if (overElement) {
-    const targetId = overElement.getAttribute('data-player-id')
-      || overElement.querySelector('[data-player-id]')?.getAttribute('data-player-id')
-    if (targetId && targetId !== touchTargetId.value) {
-      createPair(touchTargetId.value, targetId)
-    }
-  }
-
-  draggingId.value = null
-  touchTargetId.value = null
-  document.querySelectorAll('.player-draggable').forEach(el => {
-    el.classList.remove('drag-over')
-  })
-}
-
 async function createPair(id1: string, id2: string) {
   const pair: [string, string] = [id1, id2]
   await addPairToGroup(groupId, pair)
@@ -441,6 +379,19 @@ async function disbandPair(pair: [string, string]) {
   width: 16px;
   height: 16px;
   fill: #ff6b6b;
+}
+
+.player-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 3px;
+  border-bottom: 1px solid #eee;
+}
+
+.player-content:last-child {
+  border: 0;
 }
 
 .player-draggable {
