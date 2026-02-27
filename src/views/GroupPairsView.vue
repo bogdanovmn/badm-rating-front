@@ -74,37 +74,43 @@
     </div>
 
     <div class="unpaired-section">
-      <div v-if="filteredUnpairedPlayers.length" 
-        class="suggestions-list"
-      >
+      <div v-if="filteredUnpairedPlayers.length" class="suggestions-list">
         <h2>Игроки без пары</h2>
-        <DragAndDropList
-          :items="filteredUnpairedPlayers"
-          :item-id-getter="(id) => id"
-          :item-key-getter="(id) => id"
-          @item-drop="createPair"
-          @item-click="goToPlayer"
-          :show-drop-indicators="true"
-          :allow-replace="true"
+        <div 
+          v-for="playerId in filteredUnpairedPlayers" 
+          class="player-content"
+          :class="{ 'selected-player': selectedPlayerId === playerId || potentialPairPlayerId === playerId }"
+          @click="handlePlayerClick(playerId)"
         >
-          <template #default="{ item: playerId, isDragging }">
-            <div class="player-content" :class="{ 'dragging': isDragging }">
-              <div class="player-name">{{ allPlayers.get(playerId)!.player.details!.name }}</div>
-              <PlayerAttributes :player="allPlayers.get(playerId)!.player" :no-wrapper="false" />
-            </div>
-          </template>
-        </DragAndDropList>
+          <div class="player-name">{{ allPlayers.get(playerId)!.player.details!.name }}</div>
+          <PlayerAttributes :player="allPlayers.get(playerId)!.player" :no-wrapper="false" />
+        </div>
       </div>
     </div>
 
     <div v-if="filteredUnpairedPlayers.length > 1" class="hint">
-      💡 Перетащите одного игрока на другого, чтобы создать пару
+      💡 Кликните на игрока, чтобы выделить его, затем на другого игрока для создания пары
+    </div>
+
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content">
+        <h3>Создать пару?</h3>
+        <p class="modal-players">
+          <div>{{ allPlayers.get(selectedPlayerId!)!.player.details!.name }}</div>
+          <div class="plus">+</div>
+          <div>{{ allPlayers.get(potentialPairPlayerId!)!.player.details!.name }}</div>
+        </p>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-cancel" @click="closeModal">Нет</button>
+          <button class="modal-btn modal-btn-confirm" @click="confirmCreatePair">Да</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, reactive } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { playerStore } from '@/stores/player'
 import { groupById, groupPlayers, groupPairs, addPairToGroup, removePairFromGroup } from '@/api'
@@ -112,7 +118,6 @@ import { PlayType, type Group, type Player, type RatingSnapshot, type RatingStat
 import PairGroupIcon from '@/components/icons/PairGroupIcon.vue'
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue'
 import PlayerAttributes from '@/components/PlayerAttributes.vue'
-import DragAndDropList from '@/components/DragAndDropList.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -127,12 +132,14 @@ const isEverythingLoaded = ref<boolean>(false)
 const playFilterAvailableValues = ref<Map<Source, Map<PlayType, boolean>>>(new Map())
 const isEditMode = ref<boolean>(true)
 
+const selectedPlayerId = ref<string | null>(null)
+const potentialPairPlayerId = ref<string | null>(null)
+const showModal = ref<boolean>(false)
+
 const allPlayers = ref<(Map<string, PlayerRating>)>(new Map())
 const pairs = ref<[string, string][]>([])
 const filteredPairs = ref<[string, string][]>([])
 const filteredUnpairedPlayers = ref<string[]>([])
-const draggingId = ref<string | null>(null)
-const touchTargetId = ref<string | null>(null)
 
 class PlayerRating {
     player: Player
@@ -150,6 +157,17 @@ class PlayerRating {
       return this.rating.find(r => r.playType === playType) != undefined
     }
 }
+
+// Вычисляемые имена для модального окна
+const selectedPlayerName = computed(() => {
+  if (!selectedPlayerId.value) return ''
+  return allPlayers.value.get(selectedPlayerId.value)?.player.details?.name || ''
+})
+
+const potentialPairPlayerName = computed(() => {
+  if (!potentialPairPlayerId.value) return ''
+  return allPlayers.value.get(potentialPairPlayerId.value)?.player.details?.name || ''
+})
 
 const unpairedPlayers = computed(() => {
   const pairedIds = new Set(pairs.value.flat())
@@ -292,6 +310,36 @@ function updateView(): void {
     filteredUnpairedPlayers.value = unpairedPlayers.value.filter(p => filteredPlayers.has(p))
 }
 
+function handlePlayerClick(playerId: string) {
+  if (selectedPlayerId.value === playerId) {
+    selectedPlayerId.value = null
+    return
+  }
+  
+  if (!selectedPlayerId.value) {
+    selectedPlayerId.value = playerId
+    return
+  }
+  
+  if (selectedPlayerId.value !== playerId) {
+    potentialPairPlayerId.value = playerId
+    showModal.value = true
+  }
+}
+
+function closeModal() {
+  showModal.value = false
+  selectedPlayerId.value = null
+  potentialPairPlayerId.value = null
+}
+
+async function confirmCreatePair() {
+  if (selectedPlayerId.value && potentialPairPlayerId.value) {
+    await createPair(selectedPlayerId.value, potentialPairPlayerId.value)
+  }
+  closeModal()
+}
+
 async function createPair(id1: string, id2: string) {
   const pair: [string, string] = [id1, id2]
   await addPairToGroup(groupId, pair)
@@ -388,41 +436,22 @@ async function disbandPair(pair: [string, string]) {
   width: 100%;
   padding: 12px 3px;
   border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.player-content:hover {
+  background-color: #f0f0f0;
 }
 
 .player-content:last-child {
   border: 0;
 }
 
-.player-draggable {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: grab;
-  transition: all 0.2s;
-  overflow: hidden;
-  max-width: 800px;
-  padding: 12px 3px;
-  border-bottom: 1px solid #eee;
-}
-
-.player-draggable:last-child {
-  border: 0;
-}
-
-.player-draggable:active {
-  cursor: grabbing;
-}
-
-.player-draggable.dragging {
-  opacity: 0.6;
-  transform: scale(0.95);
-  z-index: 10;
-}
-
-.player-draggable.drag-over {
-  outline: 4px dashed #d68900;
-  outline-offset: 4px;
+.selected-player {
+  background-color: #ffeedb;
+  border-left: 4px solid #f39f21;
+  padding-left: 8px;
 }
 
 .hint {
@@ -501,6 +530,84 @@ async function disbandPair(pair: [string, string]) {
   margin-left: 20px;
 }
 
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 24px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.modal-players {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #201605;
+  margin: 16px 0;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.modal-players .plus {
+  font-weight: 900;
+  font-size: x-large;
+  color: #684932
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.modal-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.modal-btn-cancel {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.modal-btn-cancel:hover {
+  background-color: #d0d0d0;
+}
+
+.modal-btn-confirm {
+  background-color: #4caf50;
+  color: white;
+}
+
+.modal-btn-confirm:hover {
+  background-color: #45a049;
+}
+
 @media (max-width: 768px) {
   .pair-card {
     gap: 12px;
@@ -550,6 +657,23 @@ async function disbandPair(pair: [string, string]) {
     font-size: 0.7rem;
     margin-top: 0px;
     max-width: 95%;
+  }
+
+  .modal-content {
+    padding: 16px;
+  }
+  
+  .modal-content h3 {
+    font-size: 1.2rem;
+  }
+  
+  .modal-players {
+    font-size: 1rem;
+    padding: 8px;
+  }
+  
+  .modal-btn {
+    padding: 8px 16px;
   }
 }
 </style>
