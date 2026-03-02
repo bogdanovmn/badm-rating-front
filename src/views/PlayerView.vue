@@ -91,7 +91,7 @@ import { playerStore } from '@/stores/player';
 import { groupsStore } from '@/stores/groups'
 import { authStore } from '@/stores/auth'
 import { computed, watch, ref, onMounted } from 'vue';
-import { addPlayerToGroup, PlayType, Source, TopType, type Group } from '@/api';
+import { addPlayerToGroup, PlayType, Source, TopType, YearGroup, type Group } from '@/api';
 import { formatDate, PLAY_TYPE_ORDER, SOURCE_ORDER } from '@/common';
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
 
@@ -189,7 +189,7 @@ function initializeSelection(): void {
   pStore.setSourceFilter(availableSource, availablePlayType!);
 }
 
-function setRatingFilter({ source, playType }: { source: Source; playType: PlayType }) {
+function setRatingFilter({ source, playType }: { source: Source; playType: PlayType | null, yearGroup: YearGroup | null }) {
   pStore.setSourceFilter(source, playType);
 }
 

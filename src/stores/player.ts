@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
 import type { ApiError } from '@/api/common';
-import { playerBriefStat, playerInfo, playerRatingHistory, playerSimilarities, playerTopContext, playerTopPositionHistory, type RatingState } from '@/api';
+import { playerBriefStat, playerInfo, playerRatingHistory, playerSimilarities, playerTopContext, playerTopPositionHistory, YearGroup, type RatingState } from '@/api';
 import { type Player, type RatingHistory, type HistoryPoints, Source, TopType, type PlayType, type TopPlayer } from '@/api';
 import { TopKey } from '@/common';
 
@@ -49,7 +49,7 @@ export const playerStore = defineStore('player', () => {
     } else {
       return topContextByPlayer.value.get(selectedPlayer.value.id)
         ?.get(
-          new TopKey(topType, selectedSource.value, selectedPlayType.value).value()
+          new TopKey(topType, selectedSource.value, selectedPlayType.value, YearGroup.All).value()
         ) || []
     }
   }
@@ -60,7 +60,7 @@ export const playerStore = defineStore('player', () => {
     } else {
       return topPositionHistoryByPlayer.value.get(selectedPlayer.value.id)
         ?.get(
-          new TopKey(topType, selectedSource.value, selectedPlayType.value).value()
+          new TopKey(topType, selectedSource.value, selectedPlayType.value, YearGroup.All).value()
         ) || []
     }
   }
@@ -124,7 +124,7 @@ export const playerStore = defineStore('player', () => {
     if (selectedSource.value == null || selectedPlayType == null) {
       return Promise.resolve();
     }
-    const key = new TopKey(topType, selectedSource.value, selectedPlayType.value!).value();
+    const key = new TopKey(topType, selectedSource.value, selectedPlayType.value!, YearGroup.All).value();
     const playerId = selectedPlayer.value!.id;
     if (!topContextByPlayer.value.has(playerId)) {
       topContextByPlayer.value.set(playerId, new Map());
@@ -145,7 +145,7 @@ export const playerStore = defineStore('player', () => {
     if (selectedSource.value == null || selectedPlayType == null) {
       return Promise.resolve();
     }
-    const key = new TopKey(topType, selectedSource.value, selectedPlayType.value!).value();
+    const key = new TopKey(topType, selectedSource.value, selectedPlayType.value!, YearGroup.All).value();
     const playerId = selectedPlayer.value!.id;
     if (!topPositionHistoryByPlayer.value.has(playerId)) {
       topPositionHistoryByPlayer.value.set(playerId, new Map());
