@@ -18,6 +18,8 @@
   <SourceTypeFilter
     :selected-source="selectedSource"
     :selected-play-type="selectedPlayType"
+    :selected-year-group="selectedYearGroup"
+    :show-year-groups="topType == TopType.Actual"
     :is-active="true"
     @update:filter="updateFilter"
   />
@@ -36,7 +38,7 @@ import { topPlayersStore } from '@/stores/top';
 import { playerStore } from '@/stores/player';
 import SourceTypeFilter from '@/components/SourceTypeFilter.vue';
 import TopPlayers from '@/components/TopPlayers.vue';
-import { TopType, Source, PlayType } from '@/api';
+import { TopType, Source, PlayType, YearGroup } from '@/api';
 import { formatDate } from '@/common';
 
 const topStore = topPlayersStore();
@@ -45,22 +47,37 @@ const storePlayer = playerStore();
 const topType = ref<TopType>(TopType.Actual);
 const selectedSource = ref<Source>(Source.RNBFJunior);
 const selectedPlayType = ref<PlayType>(PlayType.MS);
+const selectedYearGroup = ref<YearGroup>(YearGroup.All);
 
 const selectedGroupData = computed(() => {
-  return topStore.getTopPlayers(topType.value, selectedSource.value, selectedPlayType.value);
+  return topStore.getTopPlayers(topType.value, selectedSource.value, selectedPlayType.value, selectedYearGroup.value);
 });
 
 function toggleTopType(): void {
   topType.value = topType.value === TopType.Actual ? TopType.Global : TopType.Actual;
 }
 
-function updateFilter({ source, playType }: { source: Source; playType: PlayType }): void {
+function updateFilter({ source, playType, yearGroup }: { source: Source; playType: PlayType | null, yearGroup: YearGroup | null }): void {
   selectedSource.value = source;
-  selectedPlayType.value = playType;
+  if (topType.value == TopType.Global) {
+    yearGroup = YearGroup.All
+  }
+  if (playType) {
+    selectedPlayType.value = playType;
+  }
+  if (yearGroup && topType.value == TopType.Actual) {
+    if (selectedSource.value == Source.RNBF) {
+      selectedSource.value = Source.RNBFJunior;
+    }
+    selectedYearGroup.value = yearGroup;
+  }
+  if (selectedSource.value == Source.RNBF) {
+    selectedYearGroup.value = YearGroup.All;
+  }
 }
 
-watch([topType, selectedSource, selectedPlayType], async () => {
-  await topStore.loadTopPlayers(topType.value, selectedSource.value, selectedPlayType.value);
+watch([topType, selectedSource, selectedPlayType, selectedYearGroup], async () => {
+  await topStore.loadTopPlayers(topType.value, selectedSource.value, selectedPlayType.value, selectedYearGroup.value);
 }, { immediate: true });
 </script>
 

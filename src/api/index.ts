@@ -5,6 +5,14 @@ export enum TopType {
   Actual = 'actual',
 }
 
+export enum YearGroup {
+  U19 = 'U19',
+  U17 = 'U17',
+  U15 = 'U15',
+  U13 = 'U13',
+  All = 'ALL'
+}
+
 export enum Source {
   RNBFJunior = 'RNBFJunior',
   RNBF = 'RNBF',
@@ -79,8 +87,8 @@ export async function playerRatingHistory(playerId: string): Promise<RatingHisto
   return makeApiRequest<RatingHistory[]>('get', `/players/${playerId}/rating-history`);
 }
 
-export async function playersTop(topType: TopType, source: Source, playType: PlayType): Promise<TopPlayer[]> {
-  return makeApiRequest<TopPlayer[]>('get', `/top/${topType}`, { source, playType });
+export async function playersTop(topType: TopType, source: Source, playType: PlayType, yearGroup: YearGroup): Promise<TopPlayer[]> {
+  return makeApiRequest<TopPlayer[]>('get', `/top/${topType}`, { source, playType, yearGroup });
 }
 
 export async function playerTopContext(playerId: string, topType: TopType, source: Source, playType: PlayType): Promise<TopPlayer[]> {

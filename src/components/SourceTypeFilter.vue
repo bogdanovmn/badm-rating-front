@@ -11,46 +11,63 @@
         {{ sourceAttributes[source].name }}
       </legend>
       <div class="playtype-tabs">
-        <button
-          v-for="type in PLAY_TYPE_ORDER"
-          :key="type"
-          :class="{ 'tab-button': true, active: selectedSource === source && selectedPlayType === type }"
-          @click="emit('update:filter', { source, playType: type })"
-          :disabled="!isActive || !isPlayTypeAvailable(source, type)"
-          :style="{ display: isPlayTypeAvailable(source, type) ? 'block' : 'none' }"
-        >
-          {{ type }}
-        </button>
+        <div class="play-types">
+          <button
+            v-for="type in PLAY_TYPE_ORDER"
+            :key="type"
+            :class="{ 'tab-button': true, active: selectedSource === source && selectedPlayType === type }"
+            @click="emit('update:filter', { source, playType: type, yearGroup: null })"
+            :disabled="!isActive || !isPlayTypeAvailable(source, type)"
+            :style="{ display: isPlayTypeAvailable(source, type) ? 'block' : 'none' }"
+          >
+            {{ type }}
+          </button>
+        </div>
+        <div v-if="showYearGroups && sourceAttributes[source].hasYearGroup" class="year-groups">
+          <button
+            v-for="yearGroup in YEAR_GROUP_ORDER"
+            :key="yearGroup"
+            :class="{ 'tab-button': true, active: selectedYearGroup === yearGroup, off: !(selectedSource  == Source.RNBFJunior && selectedPlayType) }"
+            @click="emit('update:filter', { source, playType: null, yearGroup })"
+          >
+            {{ yearGroup }}
+          </button>
+        </div>
       </div>
     </fieldset>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Source, PlayType } from '@/api';
-import { SOURCE_ORDER, PLAY_TYPE_ORDER } from '@/common';
+import { Source, PlayType, YearGroup } from '@/api';
+import { SOURCE_ORDER, PLAY_TYPE_ORDER, YEAR_GROUP_ORDER } from '@/common';
 
 const props = defineProps<{
   selectedSource: Source | null;
   selectedPlayType: PlayType | null;
+  selectedYearGroup?: YearGroup;
   availableSources?: Map<Source, Map<PlayType, any>>;
-  isActive: boolean
+  isActive: boolean;
+  showYearGroups?: boolean
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:filter', value: { source: Source; playType: PlayType }): void;
+  (e: 'update:filter', value: { source: Source; playType: PlayType | null; yearGroup: YearGroup | null}): void;
 }>();
 
 interface SourceAttributes {
   name: string;
+  hasYearGroup: boolean;
 }
 
 const sourceAttributes: Record<Source, SourceAttributes> = {
   RNBF: {
-    name: 'НФБР'
+    name: 'НФБР',
+    hasYearGroup: false
   },
   RNBFJunior: {
-    name: 'НФБР Юниорский'
+    name: 'НФБР Юниорский',
+    hasYearGroup: true
   }
 };
 
@@ -97,6 +114,19 @@ function isPlayTypeAvailable(source: Source, playType: PlayType): boolean {
 .playtype-tabs {
   display: flex;
   flex-wrap: nowrap;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.play-types {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.year-groups {
+  display: flex;
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
@@ -113,6 +143,10 @@ function isPlayTypeAvailable(source: Source, playType: PlayType): boolean {
   background-color: #F5FAFF;
 }
 
+.year-groups .tab-button {
+  font-size: 0.7rem;
+}
+
 .tab-button:hover {
   border-color: #999;
 }
@@ -126,6 +160,11 @@ function isPlayTypeAvailable(source: Source, playType: PlayType): boolean {
 
 .tab-button:disabled {
   display: none;
+}
+
+.tab-button .off {
+  pointer-events: none;
+  opacity: 0.5;  
 }
 
 .source-group[data-source="RNBFJunior"] legend {
