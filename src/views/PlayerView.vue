@@ -9,15 +9,53 @@
         :is-active="true"
         @update:filter="setRatingFilter"
       />
-      <div v-if="!pStore.isLoading" class="rating-resume">
-        <div>Рейтинг: <span class="value">{{ lastRating }}</span></div>
-        <div v-if="actualTopContext.length">
-          <span class="value">{{ actualTopPosition?.value }}</span><span class="value-suffix">-е</span> место!
+      <div v-if="pStore.isTopContextLoading" class="rating-resume loading">
+        <div class="skeleton-loader">
+          <div class="skeleton-item"></div>
+          <div class="skeleton-item"></div>
+          <div class="skeleton-item"></div>
         </div>
-        <div v-else>
-          <span class="value">{{ actualTopPosition?.value }}</span><span class="value-suffix">-е</span> место (исторически на {{ formatDate(actualTopPosition?.date) }})
+        <div class="loading-text">Загрузка данных...</div>
+      </div>
+      
+      <div v-else class="rating-resume">
+        <div class="rating-main">
+          <span class="rating-label">Текущий рейтинг</span>
+          <div class="rating-value-wrapper">
+            <span class="rating-value">{{ lastRating }}</span>
+            <span v-if="ratingHistory.length >= 2 && getTrendValue() !== '0'" class="rating-trend" :class="getTrendClass()">
+              {{ getTrendIcon() }} {{ getTrendValue() }}
+            </span>
+          </div>
         </div>
-        <div><span class="value">{{ globalTopPosition?.value }}</span><span class="value-suffix">-е</span> место за все время</div>
+        
+        <div class="rating-stats">
+          <div v-if="juniorTopContext.length" class="stat-item highlight">
+            <span class="stat-icon">🏆</span>
+            <span class="stat-text">
+              <b>{{ juniorTopPosition }}</b> место в возрастной группе
+            </span>
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-icon">📊</span>
+            <span class="stat-text">
+              <template v-if="actualTopContext.length">
+                <b>{{ actualTopPosition?.value }}</b> место среди всех
+              </template>
+              <template v-else>
+                <b>{{ actualTopPosition?.value }}</b> место среди всех (на <b>{{ formatDate(actualTopPosition?.date) }}</b>)
+              </template>
+            </span>
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-icon">⭐</span>
+            <span class="stat-text">
+              <b>{{ globalTopPosition?.value }}</b> место за всё время
+            </span>
+          </div>
+        </div>
       </div>
       <RatingChart
         :rating-data="ratingHistory"
@@ -109,7 +147,36 @@ const isLoadingGroups = ref<boolean>(false)
 const allGroups = ref<Group[]>([])
 const addingToGroup = ref<Set<string>>(new Set())
 
+const getTrendValue = () => {
+  if (ratingHistory.value.length < 2) return '';
+  const last = ratingHistory.value[ratingHistory.value.length - 1].value;
+  const prev = ratingHistory.value[ratingHistory.value.length - 2].value;
+  const diff = last - prev;
+  return `${diff > 0 ? '+' : ''}${diff}`;
+};
+
+const getTrendIcon = () => {
+  if (ratingHistory.value.length < 2) return '';
+  const last = ratingHistory.value[ratingHistory.value.length - 1].value;
+  const prev = ratingHistory.value[ratingHistory.value.length - 2].value;
+  const diff = last - prev;
+  if (diff > 0) return '▲';
+  if (diff < 0) return '▼';
+  return '•';
+};
+
+const getTrendClass = () => {
+  if (ratingHistory.value.length < 2) return '';
+  const last = ratingHistory.value[ratingHistory.value.length - 1].value;
+  const prev = ratingHistory.value[ratingHistory.value.length - 2].value;
+  const diff = last - prev;
+  if (diff > 0) return 'trend-up';
+  if (diff < 0) return 'trend-down';
+  return 'trend-neutral';
+};
+
 const loadGroupsForCurrentPlayer = async () => {
+  if (!aStore.isAuthenticated) return
   if (!player.value) return
   isLoadingGroups.value = true
   allGroups.value = await gStore.loadGroupsForPlayer(player.value.id)
@@ -168,6 +235,11 @@ const actualTopPosition = computed(() => {
 const globalTopPosition = computed(() => {
   return globalTopPositionHistory.value.length
     ? globalTopPositionHistory.value[globalTopPositionHistory.value.length - 1]
+    : null
+});
+const juniorTopPosition = computed(() => {
+  return juniorTopContext.value.length
+    ? juniorTopContext.value.filter(p => p.player.id == player.value?.id)[0].ratingSnapshot?.position
     : null
 });
 
@@ -237,30 +309,162 @@ async function loadPlayerData() {
 
 <style scoped>
 .rating-resume {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 0px;
-  padding: 12px;
   background-color: #f8fdff;
   border-radius: 8px;
+  padding: 16px;
+  margin: 16px auto;
   max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+  border: 1px solid #e6f0f5;
 }
 
-.rating-resume > div {
-  font-size: 1.2rem;
-  font-weight: 100;
+/* Состояние загрузки */
+.rating-resume.loading {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-loader {
+  width: 100%;
+  max-width: 300px;
+}
+
+.skeleton-item {
+  height: 20px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  margin: 8px 0;
+  border-radius: 4px;
+}
+
+.skeleton-item:nth-child(1) { width: 60%; }
+.skeleton-item:nth-child(2) { width: 80%; }
+.skeleton-item:nth-child(3) { width: 70%; }
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.loading-text {
   color: #969590;
-  text-align: center;
+  font-size: 0.9rem;
 }
 
-.rating-resume > div > span.value {
+/* Основной рейтинг */
+.rating-main {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.rating-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #969590;
+  margin-bottom: 4px;
+}
+
+.rating-value-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.rating-value {
+  font-size: 2.5rem;
   font-weight: bold;
   color: #806e0a;
-  margin: 0 4px;
+  line-height: 1;
+}
+
+.rating-trend {
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background-color: white;
+}
+
+.trend-up {
+  color: #7db9a1;
+  background-color: #e8f5e9;
+}
+
+.trend-down {
+  color: #b87878;
+  background-color: #ffebee;
+}
+
+.trend-neutral {
+  color: #806e0a;
+  background-color: #fff3e0;
+}
+
+/* Статистика */
+.rating-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #e6f0f5;
+  font-size: 0.95rem;
+}
+
+.stat-item.highlight {
+  background-color: #fff8e1;
+  border-color: #ffe082;
+}
+
+.stat-icon {
+  font-size: 1.1rem;
+  min-width: 24px;
+  color: #806e0a;
+}
+
+.stat-text {
+  color: #333;
+  line-height: 1.4;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .rating-resume {
+    padding: 12px;
+    margin: 12px auto;
+  }
+  
+  .rating-value {
+    font-size: 2rem;
+  }
+  
+  .stat-item {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .rating-value {
+    font-size: 1.8rem;
+  }
+  
+  .rating-trend {
+    font-size: 0.9rem;
+    padding: 2px 6px;
+  }
 }
 
 span.value-suffix {
@@ -410,13 +614,4 @@ div.actions {
   to { transform: rotate(360deg); }
 }
 
-@media (max-width: 768px) {
-  .rating-resume {
-    padding: 10px;
-  }
-
-  .rating-resume > div {
-    font-size: 1rem;
-  }
-}
 </style>
