@@ -8,6 +8,7 @@ import AboutView from '../views/AboutView.vue';
 
 import { tokenStorage } from "@bogdanovmn/ssofw"
 import type { Role } from "@bogdanovmn/ssofw"
+import type { Player } from '@/api';
 
 const routes = [
   { path: '/player', component: PlayerView },
@@ -59,6 +60,11 @@ router.beforeEach(
 function error(msg: string) {
   localStorage.setItem("errorMsg", msg)
   return { path: "/error" }
+}
+
+export
+function showPlayerPage(player: Player) {
+  router.push(`/players/${player.id}`);
 }
 
 export default router;

@@ -9,7 +9,7 @@
         v-for="sp in players"
         :key="sp.id"
         class="player-row"
-        @click="onSelect(sp)"
+        @click="showPlayerPage(sp)"
       >
         <span class="player-name">{{ sp.details!.name }}</span>
         <PlayerAttributes :player="sp" />
@@ -19,19 +19,14 @@
 </template>
 
 <script setup lang="ts">
-import { playerStore } from '@/stores/player';
 import type { Player } from '@/api';
+import { showPlayerPage } from '@/router';
 import PlayerAttributes from './PlayerAttributes.vue';
 
 const props = defineProps<{
   players: Player[];
 }>();
 
-const pStore = playerStore();
-
-async function onSelect(player: Player): Promise<void> {
-  pStore.selectPlayer(player);
-}
 </script>
 
 <style scoped>

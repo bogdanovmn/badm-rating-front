@@ -83,9 +83,9 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
 import { type Player, type TopPlayer, TopType } from '@/api';
 import { formatDate } from '@/common';
+import { showPlayerPage } from '@/router';
 import PlayerAttributes from './PlayerAttributes.vue';
 
 const props = defineProps<{
@@ -97,7 +97,6 @@ const props = defineProps<{
   localPosition?: boolean;
 }>();
 
-const router = useRouter();
 const loadingByPlayer = props.loadingByPlayer ?? new Map();
 
 const changeValueFormatted = (change: number): string => {
@@ -105,10 +104,6 @@ const changeValueFormatted = (change: number): string => {
   if (change < 0) return `↓ ${Math.abs(change)}`;
   return '';
 };
-
-function showPlayerPage(player: Player) {
-  router.push(`/players/${player.id}`);
-}
 
 </script>
 

@@ -20,19 +20,17 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { playerStore } from '@/stores/player';
 import { searchPlayers } from '@/api';
 import type { Player } from '@/api';
+import { showPlayerPage } from '@/router';
 import { debounce } from 'lodash';
 import PlayerAttributes from './PlayerAttributes.vue';
-
-const store = playerStore();
 
 const searchQuery = ref('');
 const suggestions = ref<Player[]>([]);
 
 async function onPlayerSelect(player: Player) {
-  store.selectPlayer(player);
+  showPlayerPage(player);
   searchQuery.value = '';
   suggestions.value = [];
 };

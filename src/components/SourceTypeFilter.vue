@@ -90,6 +90,7 @@ function isPlayTypeAvailable(source: Source, playType: PlayType): boolean {
   gap: 15px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .source-group {

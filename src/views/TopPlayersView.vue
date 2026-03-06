@@ -88,12 +88,6 @@ watch([topType, selectedSource, selectedPlayType, selectedYearGroup], async () =
   padding: 20px 0;
 }
 
-h11 {
-  text-align: center;
-  margin-bottom: 12px;
-  font-size: 1.8rem;
-}
-
 h1 span.top-date {
   color: #806e0a;
   font-weight: bolder;
