@@ -95,6 +95,10 @@ export async function playerTopContext(playerId: string, topType: TopType, sourc
   return makeApiRequest<TopPlayer[]>('get', `/top/${topType}/context/${playerId}`, { source, playType });
 }
 
+export async function playerJuniorTopContext(playerId: string, playType: PlayType): Promise<TopPlayer[]> {
+  return makeApiRequest<TopPlayer[]>('get', `/top/junior/context/${playerId}`, { playType });
+}
+
 export async function playerTopPositionHistory(playerId: string, topType: TopType, source: Source, playType: PlayType): Promise<HistoryPoints> {
   return makeApiRequest<HistoryPoints>('get', `/top/${topType}/position-history`, { playerId, source, playType });
 }

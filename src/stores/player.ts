@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
 import type { ApiError } from '@/api/common';
-import { playerBriefStat, playerInfo, playerRatingHistory, playerSimilarities, playerTopContext, playerTopPositionHistory, YearGroup, type RatingState } from '@/api';
+import { playerBriefStat, playerInfo, playerJuniorTopContext, playerRatingHistory, playerSimilarities, playerTopContext, playerTopPositionHistory, YearGroup, type RatingState } from '@/api';
 import { type Player, type RatingHistory, type HistoryPoints, Source, TopType, type PlayType, type TopPlayer } from '@/api';
 import { TopKey } from '@/common';
 
@@ -20,6 +20,7 @@ export const playerStore = defineStore('player', () => {
   const topPositionHistoryByPlayer = ref<Map<string, Map<string, DataPoint[]>>>(new Map());
   const similarByPlayer = ref<Map<string, Player[]>>(new Map());
   const topContextByPlayer = ref<Map<string, Map<string, TopPlayer[]>>>(new Map());
+  const topJuniorContextByPlayer = ref<Map<string, Map<PlayType, TopPlayer[]>>>(new Map());
   const isLoading = ref<boolean>(false);
   const isTopContextLoading = ref<boolean>(false);
   const isTopPositionHistoryLoading = ref<boolean>(false);
@@ -51,6 +52,16 @@ export const playerStore = defineStore('player', () => {
         ?.get(
           new TopKey(topType, selectedSource.value, selectedPlayType.value, YearGroup.All).value()
         ) || []
+    }
+  }
+
+  function topJuniorContext(): TopPlayer[] {
+    if (selectedPlayer.value == null || selectedSource.value != Source.RNBFJunior || selectedPlayType.value == null) {
+      return [];
+    } else {
+      return topJuniorContextByPlayer.value
+        .get(selectedPlayer.value.id)
+        ?.get(selectedPlayType.value) || []
     }
   }
 
@@ -102,7 +113,8 @@ export const playerStore = defineStore('player', () => {
     isTopContextLoading.value = true;
     return Promise.all([
       loadPlayerTopContextByType(TopType.Actual),
-      loadPlayerTopContextByType(TopType.Global)
+      loadPlayerTopContextByType(TopType.Global),
+      loadPlayerJuniorTopContextByType()
     ]).then(() => {
       isTopContextLoading.value = false;
       return undefined;
@@ -121,7 +133,7 @@ export const playerStore = defineStore('player', () => {
   }
 
   async function loadPlayerTopContextByType(topType: TopType): Promise<void> {
-    if (selectedSource.value == null || selectedPlayType == null) {
+    if (selectedSource.value == null || selectedPlayType.value == null) {
       return Promise.resolve();
     }
     const key = new TopKey(topType, selectedSource.value, selectedPlayType.value!, YearGroup.All).value();
@@ -141,8 +153,29 @@ export const playerStore = defineStore('player', () => {
         });
   }
 
+  async function loadPlayerJuniorTopContextByType(): Promise<void> {
+    if (selectedPlayType.value == null || selectedSource.value !== Source.RNBFJunior) {
+      return Promise.resolve();
+    }
+    const key = selectedPlayType.value!;
+    const playerId = selectedPlayer.value!.id;
+    if (!topJuniorContextByPlayer.value.has(playerId)) {
+      topJuniorContextByPlayer.value.set(playerId, new Map());
+    }
+    return topJuniorContextByPlayer.value.get(playerId)!.has(key)
+      ? Promise.resolve()
+      : playerJuniorTopContext(playerId, selectedPlayType.value!)
+        .then(function (top: TopPlayer[]) {
+          topJuniorContextByPlayer.value.get(playerId)!.set(key, top);
+        })
+        .catch(function (error: ApiError) {
+          console.error(`Ошибка загрузки топ контекста игрока: ${error.message}, Статус: ${error.status}`);
+          topJuniorContextByPlayer.value.get(playerId)!.set(key, []);
+        });
+  }
+
   async function loadPlayerTopPositionHistory(topType: TopType): Promise<void> {
-    if (selectedSource.value == null || selectedPlayType == null) {
+    if (selectedSource.value == null || selectedPlayType.value == null) {
       return Promise.resolve();
     }
     const key = new TopKey(topType, selectedSource.value, selectedPlayType.value!, YearGroup.All).value();
@@ -223,6 +256,7 @@ export const playerStore = defineStore('player', () => {
     selectPlayer,
     similarPlayers,
     topContext,
+    topJuniorContext,
     loadPlayerTopContext,
     topPositionHistory,
     loadTopPositionHistory,

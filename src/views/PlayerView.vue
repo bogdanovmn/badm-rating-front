@@ -29,6 +29,7 @@
       <PlayerTopContext
         :actual-top-players="actualTopContext" 
         :global-top-players="globalTopContext" 
+        :junior-top-players="juniorTopContext"
         :selected-player="player"
       />
       <div class="actions">
@@ -142,6 +143,7 @@ const similarPlayers = computed(() => pStore.similarPlayers());
 
 const globalTopContext = computed(() => pStore.topContext(TopType.Global));
 const actualTopContext = computed(() => pStore.topContext(TopType.Actual));
+const juniorTopContext = computed(() => pStore.topJuniorContext());
 
 const selectedSource = computed(() => pStore.selectedSource);
 const selectedPlayType = computed(() => pStore.selectedPlayType);

@@ -1,4 +1,15 @@
 <template>
+  <template v-if="props.juniorTopPlayers.length">
+    <h1>
+      Позиция в ТОП игроков своей возрастной группы на <span class='top-date'>{{formatDate(actualTopContextDate)}}</span>
+    </h1>
+    <TopPlayers 
+      :top-players="props.juniorTopPlayers"
+      :top-type="TopType.Actual" 
+      :selected-player="selectedPlayer"
+      :is-loading="pStore.isTopContextLoading"
+    />
+  </template>
   <template v-if="props.actualTopPlayers.length">
     <h1>
       Позиция в ТОП игроков на <span class='top-date'>{{formatDate(actualTopContextDate)}}</span>
@@ -33,6 +44,7 @@ import { formatDate } from '@/common';
 const props = defineProps<{
   actualTopPlayers: TopPlayer[];
   globalTopPlayers: TopPlayer[];
+  juniorTopPlayers: TopPlayer[];
   selectedPlayer: Player;
 }>();
 
